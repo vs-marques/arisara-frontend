@@ -1,0 +1,611 @@
+// Caminho: src/components/admin/AdministratorsManager.tsx
+// Descrição: Gerenciamento de administradores e operadores da Pontua+
+// Data: 30/09/2025
+// Versão: 3.0
+// Histórico de Modificações:
+// - 30/09/2025: Versão 3.0 - Layout igual a Participantes COM abas
+// - 30/09/2025: Versão 2.0 - Adicionado sistema de abas
+// - 30/09/2025: Criação do componente para gestão de administradores
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { UserPlus, Search, Shield, Users, Building2, Edit, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { formatPhoneToBrazilian } from '@/lib/phoneUtils';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+import AdministratorsTabs from './AdministratorsTabs';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+interface Administrator {
+  id: string;
+  email: string;
+  full_name: string;
+  cpf: string;
+  role: string;
+  role_display: string;
+  is_active: boolean;
+  created_at: string;
+  phone_number?: string;
+  managed_companies_count?: number;
+}
+
+interface NewAdminForm {
+  email: string;
+  password: string;
+  full_name: string;
+  cpf: string;
+  phone_number: string;
+  birth_date: Date | null;
+  role: 'admin' | 'superadmin';
+}
+
+const AdministratorsManager: React.FC = () => {
+  const [administrators, setAdministrators] = useState<Administrator[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('superadmins');
+  const [showInactive, setShowInactive] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState<NewAdminForm>({
+    email: '',
+    password: '',
+    full_name: '',
+    cpf: '',
+    phone_number: '',
+    birth_date: null,
+    role: 'superadmin'
+  });
+
+  // Mapear aba para role
+  const tabToRole = {
+    superadmins: 'superadmin',
+    admins: 'admin'
+  };
+
+  // Atualizar role no formulário quando trocar de aba
+  useEffect(() => {
+    const roleForTab = tabToRole[activeTab as keyof typeof tabToRole];
+    setFormData(prev => ({ ...prev, role: roleForTab as 'admin' | 'superadmin' }));
+  }, [activeTab]);
+
+  // Formatar CPF
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .slice(0, 14);
+  };
+
+  // Carregar administradores
+  const fetchAdministrators = async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      
+      // Filtrar por role baseado na aba ativa
+      const roleFilter = tabToRole[activeTab as keyof typeof tabToRole];
+      params.append('role', roleFilter);
+      
+      if (searchTerm) params.append('search', searchTerm);
+
+      const url = `${BACKEND_URL}/admin/administrators?${params.toString()}`;
+      console.log('Fetching from URL:', url, 'for tab:', activeTab);
+      const response = await fetchWithAuth(url);
+
+      if (!response.ok) {
+        throw new Error('Erro ao carregar administradores');
+      }
+
+      const data = await response.json();
+      console.log('Loaded administrators:', data.length, 'items for role:', roleFilter);
+      setAdministrators(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Erro ao carregar administradores:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar a lista de administradores',
+        variant: 'destructive',
+      });
+      setAdministrators([]); // Limpar lista em caso de erro
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdministrators();
+  }, [activeTab, searchTerm]);
+
+  // Validar formulário
+  const validateForm = (): boolean => {
+    if (!formData.role) {
+      toast({ title: 'Erro', description: 'Tipo de usuário é obrigatório', variant: 'destructive' });
+      return false;
+    }
+
+    if (!formData.full_name.trim()) {
+      toast({ title: 'Erro', description: 'Nome completo é obrigatório', variant: 'destructive' });
+      return false;
+    }
+
+    if (formData.cpf.replace(/\D/g, '').length !== 11) {
+      toast({ title: 'Erro', description: 'CPF inválido', variant: 'destructive' });
+      return false;
+    }
+
+    if (!formData.email.includes('@')) {
+      toast({ title: 'Erro', description: 'Email inválido', variant: 'destructive' });
+      return false;
+    }
+
+    if (formData.password.length < 8) {
+      toast({ title: 'Erro', description: 'Senha deve ter no mínimo 8 caracteres', variant: 'destructive' });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Criar novo administrador
+  const handleCreateAdministrator = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.full_name,
+        cpf: formData.cpf.replace(/\D/g, ''),
+        phone_number: formData.phone_number,
+        birth_date: formData.birth_date ? formData.birth_date.toISOString().split('T')[0] : null,
+        role: formData.role
+      };
+
+      const response = await fetchWithAuth(`${BACKEND_URL}/admin/administrators`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erro ao criar administrador');
+      }
+
+      const roleLabels = {
+        superadmin: 'Super Administrador',
+        admin: 'Administrador'
+      };
+
+      toast({
+        title: 'Sucesso',
+        description: `${roleLabels[formData.role]} criado com sucesso`,
+      });
+
+      setIsDialogOpen(false);
+      setFormData({
+        email: '',
+        password: '',
+        full_name: '',
+        cpf: '',
+        phone_number: '',
+        birth_date: null,
+        role: tabToRole[activeTab as keyof typeof tabToRole] as 'admin' | 'superadmin'
+      });
+      fetchAdministrators();
+    } catch (error: any) {
+      console.error('Erro ao criar administrador:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível criar o administrador',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Alterar status (com confirmação)
+  const handleStatusChange = async (admin: Administrator, newStatus: string) => {
+    const currentStatus = admin.is_active ? 'ativo' : 'inativo';
+    if (newStatus === currentStatus) return;
+
+    try {
+      const response = await fetchWithAuth(
+        `${BACKEND_URL}/admin/administrators/${admin.id}/toggle-status`,
+        {
+          method: 'PATCH',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erro ao alterar status');
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Status alterado com sucesso',
+      });
+
+      fetchAdministrators();
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Cache de todos os administradores para stats globais
+  const [allAdminsCache, setAllAdminsCache] = useState<{
+    superadmins: number;
+    admins: number;
+    operadores: number;
+  }>({ superadmins: 0, admins: 0 });
+
+  // Buscar stats de todas as roles (uma vez no mount)
+  useEffect(() => {
+    const fetchAllStats = async () => {
+      try {
+        const roles = ['superadmin', 'admin'];
+        const counts = { superadmins: 0, admins: 0 };
+        
+        for (const role of roles) {
+          try {
+            const response = await fetchWithAuth(`${BACKEND_URL}/admin/administrators?role=${role}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (role === 'superadmin') counts.superadmins = data.length;
+              if (role === 'admin') counts.admins = data.length;
+            }
+          } catch (err) {
+            console.error(`Erro ao carregar role ${role}:`, err);
+          }
+        }
+        
+        setAllAdminsCache(counts);
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas globais:', error);
+      }
+    };
+    
+    fetchAllStats();
+  }, [administrators]); // Atualiza quando a lista muda
+
+  // Estatísticas GLOBAIS
+  const globalStats = allAdminsCache;
+
+  // Estatísticas da ABA ATUAL
+  const stats = {
+    total: administrators.length,
+    ativos: administrators.filter(a => a.is_active).length,
+    inativos: administrators.filter(a => !a.is_active).length,
+  };
+
+  // Filtrar administradores
+  const filteredAdministrators = administrators.filter(admin => {
+    // Filtro de inativos
+    if (!showInactive && !admin.is_active) return false;
+    
+    return true;
+  });
+
+  // Label da role baseado na aba
+  const getRoleLabel = () => {
+    const labels = {
+      superadmins: 'Super Administrador',
+      admins: 'Administrador'
+    };
+    return labels[activeTab as keyof typeof labels];
+  };
+
+  // Label plural da role baseado na aba
+  const getRoleLabelPlural = () => {
+    const labels = {
+      superadmins: 'Super Administradores',
+      admins: 'Administradores'
+    };
+    return labels[activeTab as keyof typeof labels];
+  };
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Shield className="w-8 h-8" />
+            Administradores
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie administradores da Pontua+
+          </p>
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Novo {getRoleLabel()}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Criar Novo {getRoleLabel()}</DialogTitle>
+              <DialogDescription>
+                Adicione um novo {getRoleLabel().toLowerCase()} à Pontua+
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome Completo *</Label>
+                <Input
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="Ex: Maria Silva"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>CPF *</Label>
+                <Input
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@pontua.com.br"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={formData.phone_number}
+                  onChange={(e) => setFormData({ ...formData, phone_number: formatPhoneToBrazilian(e.target.value) })}
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Nascimento</Label>
+                <div className="flex flex-col w-full">
+                  <DatePicker
+                    selected={formData.birth_date}
+                    onChange={(date: Date | null) => setFormData({ ...formData, birth_date: date })}
+                    dateFormat="dd/MM/yyyy"
+                    locale={ptBR}
+                    placeholderText="DD/MM/AAAA"
+                    maxDate={new Date()}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    className="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 block text-left bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                    calendarClassName="text-left bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600"
+                    dayClassName={() => "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"}
+                    monthClassName={() => "text-gray-900 dark:text-gray-100"}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Senha *</Label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleCreateAdministrator} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar ' + getRoleLabel()
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Stats Cards Globais */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
+            <Shield className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{globalStats.superadmins}</div>
+            <p className="text-xs text-muted-foreground">Controle total</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+            <Shield className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{globalStats.admins}</div>
+            <p className="text-xs text-muted-foreground">Gerenciam empresas</p>
+          </CardContent>
+        </Card>
+
+      </div>
+
+      {/* Abas */}
+      <AdministratorsTabs activeTab={activeTab} onTabChange={setActiveTab}>
+        {/* Filtros */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Filtros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="search">Buscar</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Nome ou email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-6">
+                <Checkbox
+                  id="show-inactive"
+                  checked={showInactive}
+                  onCheckedChange={(checked) => setShowInactive(checked === true)}
+                />
+                <Label htmlFor="show-inactive">Mostrar inativos</Label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabela */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              {getRoleLabelPlural()} ({filteredAdministrators.length})
+            </CardTitle>
+            <CardDescription>
+              {isLoading ? (
+                <span className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Carregando...</span>
+                </span>
+              ) : (
+                `${filteredAdministrators.length} ${getRoleLabel().toLowerCase()}(s) encontrado(s)`
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data de Criação</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAdministrators.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        Nenhum {getRoleLabel().toLowerCase()} encontrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAdministrators.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell className="font-medium">{admin.full_name}</TableCell>
+                        <TableCell>{formatCPF(admin.cpf)}</TableCell>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>{admin.phone_number ? formatPhoneToBrazilian(admin.phone_number) : 'N/A'}</TableCell>
+                        <TableCell>
+                          <Select 
+                            value={admin.is_active ? 'ativo' : 'inativo'} 
+                            onValueChange={(value) => handleStatusChange(admin, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ativo">Ativo</SelectItem>
+                              <SelectItem value="inativo">Inativo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(admin.created_at).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </AdministratorsTabs>
+    </div>
+  );
+};
+
+export default AdministratorsManager;

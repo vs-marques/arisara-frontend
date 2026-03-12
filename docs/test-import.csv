@@ -1,0 +1,6 @@
+name,email,document,phone,address,city,state,zip_code,company,role,points,value,description,date,status
+João Silva,joao.silva@email.com,12345678901,11987654321,Rua das Flores 123,São Paulo,SP,01234-567,Empresa ABC,consumer,100.50,1500.00,Cliente VIP,2025-01-27,active
+Maria Santos,maria.santos@email.com,98765432100,11876543210,Av. Paulista 456,São Paulo,SP,01310-100,Empresa XYZ,consumer,75.25,1200.00,Cliente Regular,2025-01-27,active
+Pedro Costa,pedro.costa@email.com,11122233344,11765432109,Rua Augusta 789,São Paulo,SP,01412-000,Empresa DEF,consumer,200.00,3000.00,Cliente Premium,2025-01-27,active
+Ana Oliveira,ana.oliveira@email.com,55566677788,11654321098,Rua Oscar Freire 321,São Paulo,SP,01426-001,Empresa GHI,consumer,50.75,800.00,Cliente Básico,2025-01-27,active
+Carlos Lima,carlos.lima@email.com,99988877766,11543210987,Rua Haddock Lobo 654,São Paulo,SP,01414-002,Empresa JKL,consumer,125.30,1800.00,Cliente Intermediário,2025-01-27,active 

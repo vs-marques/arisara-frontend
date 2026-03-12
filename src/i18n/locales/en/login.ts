@@ -1,0 +1,27 @@
+export default {
+  title: 'Admin Console',
+  tabs: { signIn: 'Sign in', signUp: 'Sign up' },
+  headings: { signIn: 'Sign in to your account', signUp: 'Create an account', mfa: 'Confirm your identity' },
+  placeholders: { email: 'Enter your email', password: 'Enter your password', fullName: 'Your full name', mfaCode: 'MFA code' },
+  userType: { individual: 'Individual', business: 'Business' },
+  buttons: {
+    signIn: 'Sign in',
+    signInLoading: 'Signing in...',
+    forgotPassword: 'Forgot your password?',
+    validateCode: 'Validate code',
+    validateCodeLoading: 'Validating...',
+    backToLogin: 'Back to login',
+    continueSignUp: 'Continue registration',
+    doLogin: 'Sign in',
+  },
+  aria: { showPassword: 'Show password', hidePassword: 'Hide password' },
+  mfa: { defaultMessage: 'We sent a verification code to your email.', sentTo: 'Sent to' },
+  errors: {
+    invalidCredentials: 'Invalid email or password',
+    loginFailed: 'Error signing in. Please try again.',
+    mfaInvalid: 'Invalid or expired MFA code.',
+    nameRequired: 'Name is required',
+    emailRequired: 'Email is required',
+  },
+  signUpFooter: 'Already have an account?',
+};

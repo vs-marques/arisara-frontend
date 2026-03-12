@@ -1,0 +1,14 @@
+// src/pages/AdministratorsPage.tsx
+// Versão: 1.0 - Sistema completo de gerenciamento de Administradores Pontua
+// Data: 09/10/2025
+// Descrição: Página dedicada para gerenciamento de administradores, super admins e operadores
+
+import React from 'react'
+import AdministratorsManager from '@/components/admin/AdministratorsManager'
+
+const AdministratorsPage: React.FC = () => {
+  return <AdministratorsManager />
+}
+
+export default AdministratorsPage
+

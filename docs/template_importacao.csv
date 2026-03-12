@@ -1,0 +1,11 @@
+name,email,document,phone_number,birth_date,address,number,complement,neighborhood,city,state,zip_code,company_name,company_document,points,value,transaction_type,transaction_date,description
+João Silva,joao.silva@email.com,12345678901,11987654321,1985-03-15,Rua das Flores,123,Apto 45,Centro,São Paulo,SP,01234-567,Empresa ABC Ltda,12345678000123,100,150.50,credit,2025-01-27,Compra no estabelecimento
+Maria Santos,maria.santos@email.com,98765432109,11912345678,1990-07-22,Av. Paulista,1000,Sala 10,Bela Vista,São Paulo,SP,01310-100,Empresa XYZ S/A,98765432000198,250,300.00,credit,2025-01-27,Resgate de pontos
+Pedro Oliveira,pedro.oliveira@email.com,45678912345,11955556666,1988-11-08,Rua Augusta,500,Loja 15,Consolação,São Paulo,SP,01212-000,Comércio DEF,45678912000167,75,120.25,debit,2025-01-27,Transferência de pontos
+Ana Costa,ana.costa@email.com,78912345678,11977778888,1992-04-30,Alameda Santos,200,Andar 8,Jardins,São Paulo,SP,01418-000,Indústria GHI,78912345000189,180,220.75,credit,2025-01-27,Bonificação por fidelidade
+Carlos Ferreira,carlos.ferreira@email.com,32165498765,11999990000,1983-09-12,Rua Oscar Freire,150,Casa 3,Pinheiros,São Paulo,SP,05409-010,Serviços JKL,32165498000145,320,450.00,credit,2025-01-27,Compra com cashback
+Lucia Mendes,lucia.mendes@email.com,14725836985,11911112222,1995-12-03,Av. Brigadeiro Faria Lima,2000,Conjunto 100,Itaim Bibi,São Paulo,SP,01452-002,Consultoria MNO,14725836000178,90,135.50,debit,2025-01-27,Saque de pontos
+Roberto Alves,roberto.alves@email.com,96385274185,11933334444,1987-06-18,Rua Haddock Lobo,800,Apto 25,Cerqueira César,São Paulo,SP,01414-000,Tecnologia PQR,96385274000134,200,280.00,credit,2025-01-27,Promoção especial
+Fernanda Lima,fernanda.lima@email.com,85296374185,11955556666,1991-01-25,Alameda Jaú,500,Sala 20,Jardim Paulista,São Paulo,SP,01420-000,Educação STU,85296374000156,150,200.00,credit,2025-01-27,Programa de recompensas
+Ricardo Souza,ricardo.souza@email.com,74185296385,11977778888,1986-08-14,Rua Bela Cintra,1200,Loja 5,Consolação,São Paulo,SP,01415-000,Saúde VWX,74185296000123,280,350.00,credit,2025-01-27,Plano de saúde
+Patricia Rocha,patricia.rocha@email.com,36925814785,11999990000,1993-05-07,Av. Rebouças,1500,Apto 12,Pinheiros,São Paulo,SP,05402-000,Alimentação YZ,36925814000190,120,180.00,debit,2025-01-27,Compra de produtos 

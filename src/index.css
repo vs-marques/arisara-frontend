@@ -1,0 +1,1317 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   CUSTOM CALENDAR STYLING
+   ======================================== */
+.rdp {
+  --rdp-cell-size: 36px;
+  --rdp-accent-color: #ec4899;
+  --rdp-background-color: #0f0f10;
+  --rdp-accent-color-dark: #ec4899;
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid var(--rdp-accent-color);
+  margin: 0;
+}
+
+/* Hide day headers completely */
+.rdp-head_cell {
+  display: none !important;
+}
+
+.rdp-head_row {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure caption doesn't interfere with header */
+.rdp-caption {
+  position: relative !important;
+  margin-bottom: 0.75rem !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Hide default navigation */
+.rdp-nav {
+  display: none !important;
+}
+
+/* Fix day cells */
+.rdp-cell {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: var(--rdp-cell-size) !important;
+}
+
+/* Calendar rows */
+.rdp-row {
+  display: flex !important;
+  width: 100% !important;
+  gap: 0 !important;
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Selected date styling */
+.rdp-day_selected,
+.rdp-day_selected:focus-visible,
+.rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Today styling */
+.rdp-day_today:not(.rdp-day_selected) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-weight: 600 !important;
+}
+
+/* Outside month dates */
+.rdp-day_outside {
+  color: rgb(107 114 128) !important;
+  opacity: 0.4 !important;
+}
+
+/* Disabled dates */
+.rdp-day_disabled {
+  color: rgb(75 85 99) !important;
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+.rdp-day_disabled:hover {
+  background-color: transparent !important;
+}
+
+/* Hover states */
+.rdp-day:not(.rdp-day_disabled):not(.rdp-day_selected):hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+/* Navigation buttons */
+.rdp-button_reset {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.rdp-button_reset:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.05);
+}
+
+.rdp-button_reset:active {
+  transform: scale(0.95);
+}
+
+/* Month caption */
+.rdp-caption_label {
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: capitalize !important;
+}
+
+/* Focus states */
+.rdp-day:focus-visible {
+  outline: 2px solid var(--rdp-accent-color) !important;
+  outline-offset: 2px !important;
+  z-index: 10 !important;
+}
+
+.rdp-button_reset:focus-visible {
+  outline: 2px solid var(--rdp-accent-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Calendar table */
+.rdp-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+}
+
+/* Month container */
+.rdp-month {
+  width: 100% !important;
+}
+
+/* Ensure table header aligns with table body */
+.rdp-head {
+  width: 100% !important;
+}
+
+/* Make sure all cells in a row align */
+.rdp-cell,
+.rdp-head_cell {
+  box-sizing: border-box !important;
+}
+
+/* ========================================
+   REACT-BIG-CALENDAR (Agenda) — paridade visual Nyoka
+   Fundo escuro contínuo, grade discreta, hoje #EC4899, toolbar tipo console
+   ======================================== */
+.rbc-agenda-override {
+  --rbc-accent: #ec4899;
+  --rbc-surface: #141416;
+  --rbc-surface-elevated: #1c1c1f;
+  --rbc-border: rgba(255, 255, 255, 0.08);
+  --rbc-border-strong: rgba(255, 255, 255, 0.12);
+  --rbc-text: rgba(255, 255, 255, 0.95);
+  --rbc-muted: rgba(255, 255, 255, 0.45);
+  --rbc-off-range-bg: rgba(255, 255, 255, 0.06);
+  background: var(--rbc-surface) !important;
+  border-color: var(--rbc-border-strong) !important;
+}
+
+.rbc-agenda-override .rbc-calendar {
+  color: var(--rbc-text);
+  font-size: 0.875rem;
+}
+
+/* Toolbar: Nyoka — grupos separados, botões escuros, ativo rosa */
+.rbc-agenda-override .rbc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--rbc-border);
+  font-size: 0.8125rem;
+}
+.rbc-agenda-override .rbc-toolbar-label {
+  flex-grow: 1;
+  text-align: center;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--rbc-text) !important;
+  text-transform: capitalize;
+  padding: 0 0.5rem;
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group {
+  display: inline-flex;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--rbc-border);
+  background: rgba(0, 0, 0, 0.35);
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0.45rem 0.9rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500;
+  color: var(--rbc-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button + button {
+  border-left: 1px solid var(--rbc-border) !important;
+  margin-left: 0 !important;
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button:hover {
+  color: var(--rbc-text) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button.rbc-active,
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button:active {
+  background: var(--rbc-accent) !important;
+  color: #fff !important;
+}
+.rbc-agenda-override .rbc-toolbar .rbc-btn-group button:focus {
+  outline: none;
+}
+
+/* Mês: borda única, cantos arredondados, células escuras */
+.rbc-agenda-override .rbc-month-view {
+  border: 1px solid var(--rbc-border) !important;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--rbc-surface) !important;
+}
+.rbc-agenda-override .rbc-month-header {
+  background: var(--rbc-surface-elevated);
+}
+.rbc-agenda-override .rbc-header {
+  padding: 0.65rem 0.35rem !important;
+  font-weight: 600 !important;
+  font-size: 0.7rem !important;
+  text-transform: lowercase;
+  color: var(--rbc-muted) !important;
+  border-bottom: 1px solid var(--rbc-border) !important;
+  border-left-color: var(--rbc-border) !important;
+  background: transparent !important;
+}
+.rbc-agenda-override .rbc-month-row {
+  background: var(--rbc-surface);
+}
+.rbc-agenda-override .rbc-month-row + .rbc-month-row {
+  border-top: 1px solid var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-day-bg {
+  background: var(--rbc-surface) !important;
+}
+.rbc-agenda-override .rbc-day-bg + .rbc-day-bg {
+  border-left: 1px solid var(--rbc-border) !important;
+}
+/* Hoje — faixa Nyoka (magenta sólido) */
+.rbc-agenda-override .rbc-today {
+  background-color: var(--rbc-accent) !important;
+}
+.rbc-agenda-override .rbc-off-range-bg {
+  background: var(--rbc-off-range-bg) !important;
+}
+.rbc-agenda-override .rbc-off-range {
+  color: var(--rbc-muted) !important;
+  opacity: 0.85;
+}
+.rbc-agenda-override .rbc-date-cell {
+  padding: 0.35rem 0.5rem 0.15rem 0 !important;
+  color: var(--rbc-text) !important;
+}
+.rbc-agenda-override .rbc-date-cell.rbc-now a {
+  color: #fff !important;
+  font-weight: 600;
+}
+.rbc-agenda-override .rbc-row-content .rbc-date-cell.rbc-now,
+.rbc-agenda-override .rbc-row-content .rbc-date-cell.rbc-now a {
+  color: #fff !important;
+}
+.rbc-agenda-override .rbc-row-content .rbc-row .rbc-date-cell {
+  min-height: 1.5rem;
+}
+.rbc-agenda-override .rbc-row-bg .rbc-today {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* Semana / Dia — mesmo painel Nyoka */
+.rbc-agenda-override .rbc-time-view,
+.rbc-agenda-override .rbc-time-header {
+  border-color: var(--rbc-border) !important;
+  background: var(--rbc-surface) !important;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.rbc-agenda-override .rbc-time-header-content {
+  border-left-color: var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-header.rbc-today {
+  background: rgba(236, 72, 153, 0.15) !important;
+  color: var(--rbc-accent) !important;
+}
+.rbc-agenda-override .rbc-time-content {
+  border-top: 1px solid var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-time-content > * + * > * {
+  border-left-color: var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-time-gutter,
+.rbc-agenda-override .rbc-time-header-gutter {
+  background: var(--rbc-surface-elevated) !important;
+  color: var(--rbc-muted) !important;
+  border-color: var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-label {
+  color: var(--rbc-muted) !important;
+  font-size: 0.7rem;
+}
+.rbc-agenda-override .rbc-day-slot .rbc-time-slot {
+  border-top-color: rgba(255, 255, 255, 0.04) !important;
+}
+.rbc-agenda-override .rbc-timeslot-group {
+  border-bottom-color: var(--rbc-border) !important;
+}
+.rbc-agenda-override .rbc-current-time-indicator {
+  background-color: var(--rbc-accent) !important;
+}
+.rbc-agenda-override .rbc-day-slot .rbc-event {
+  border: none !important;
+}
+
+/* Eventos */
+.rbc-agenda-override .rbc-event,
+.rbc-agenda-override .rbc-day-slot .rbc-background-event {
+  background-color: rgba(236, 72, 153, 0.85) !important;
+  color: #fff !important;
+  border-radius: 0.35rem !important;
+}
+.rbc-agenda-override .rbc-event.rbc-selected {
+  background-color: #be185d !important;
+}
+.rbc-agenda-override .rbc-show-more {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--rbc-accent) !important;
+  font-weight: 600;
+}
+.rbc-agenda-override .rbc-selected-cell {
+  background: rgba(236, 72, 153, 0.12) !important;
+}
+
+/* Lista agenda */
+.rbc-agenda-override .rbc-agenda-view table.rbc-agenda-table {
+  border-color: var(--rbc-border) !important;
+  background: var(--rbc-surface);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.rbc-agenda-override .rbc-agenda-view table.rbc-agenda-table tbody > tr > td,
+.rbc-agenda-override .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-color: var(--rbc-border) !important;
+  color: var(--rbc-text) !important;
+}
+.rbc-agenda-override .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  background: var(--rbc-surface-elevated);
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  color: var(--rbc-muted) !important;
+}
+
+.rbc-agenda-override .rbc-overlay {
+  border: 1px solid var(--rbc-border-strong) !important;
+  background: var(--rbc-surface-elevated) !important;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55) !important;
+}
+.rbc-agenda-override .rbc-overlay-header {
+  border-bottom-color: var(--rbc-border) !important;
+  color: var(--rbc-text) !important;
+}
+
+/* ========================================
+   ARISARA DESIGN SYSTEM
+   Preto Absoluto (#000000) + Rosa (#EC4899)
+   ======================================== */
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 330 81% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 6%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 6%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 330 81% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 10%;
+    --input: 0 0% 10%;
+    --ring: 330 81% 60%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-black text-white;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Textura de grão sutil */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+}
+
+/* ========================================
+   CUSTOM SCROLLBAR
+   ======================================== */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 72, 153, 0.3) transparent;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.3);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.6);
+}
+
+/* ========================================
+   GLASSMORPHISM
+   ======================================== */
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06];
+  }
+
+  .glass-card {
+    @apply bg-white/[0.05] backdrop-blur-lg border border-white/10;
+  }
+
+  .glass-button {
+    @apply bg-white/[0.04] backdrop-blur-md border border-white/10;
+  }
+
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+}
+
+/* ========================================
+   PINK GRADIENT TEXT
+   ======================================== */
+
+@layer utilities {
+  .text-gradient-pink {
+    @apply bg-gradient-to-r from-[#EC4899] to-[#F472B6] bg-clip-text text-transparent;
+  }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+/* Fade-in on scroll */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-in-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.2s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.9s ease-out 0.2s both;
+}
+
+/* Carousel animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-33.333%));
+  }
+}
+
+.animate-scroll {
+  animation: scroll 20s linear infinite;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* ========================================
+   RIPPLE EFFECT
+   ======================================== */
+
+.ripple-effect {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  border-radius: 50%;
+  animation: ripple-animate 1s linear;
+}
+
+@keyframes ripple-animate {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.3;
+  }
+  100% {
+    width: 500px;
+    height: 500px;
+    opacity: 0;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   PROGRESS BAR ANIMATION
+   ======================================== */
+
+@keyframes progressLoad {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--progress-width);
+  }
+}
+
+.progress-bar-animate {
+  animation: progressLoad 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ========================================
+   ARISARA SIDEBAR TREE NAVIGATION
+   CodePen inspired with Arisara theme
+   ======================================== */
+
+:root {
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
+  --sidebar-speed: 0.18s;
+  --sidebar-timing: cubic-bezier(0, 0, 0.58, 1);
+  --tree-focus-color: #ec4899;
+  --sidebar-floating-offset: 1.5rem;
+  --sidebar-floating-top-offset: 4.5rem;
+  --sidebar-floating-radius: 22px;
+  --sidebar-floating-width: var(--sidebar-width);
+}
+
+/* Mobile Menu Button */
+.mobile-menu-button {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 60;
+  width: 40px;
+  height: 40px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.mobile-menu-button:hover {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* Mobile Backdrop */
+.mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 45;
+  display: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Floating Sidebar Pin */
+.sidebar-pin-button {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 60;
+  width: 38px;
+  height: 38px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(10, 10, 15, 0.6);
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.sidebar-pin-button:hover {
+  transform: none;
+  background: rgba(10, 10, 15, 0.8);
+  border-color: transparent;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.sidebar-pin-button:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.7);
+  outline-offset: 3px;
+}
+
+.sidebar-pin-button.pinned {
+  left: 0.75rem;
+}
+
+@media (min-width: 769px) {
+  .sidebar-pin-button {
+    display: flex;
+  }
+}
+
+/* Sidebar Container */
+.nyoka-sidebar {
+  position: fixed;
+  left: 0;
+  top: var(--sidebar-floating-top-offset);
+  width: var(--sidebar-floating-width);
+  max-height: calc(
+    100vh - var(--sidebar-floating-top-offset) - var(--sidebar-floating-offset)
+  );
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0 var(--sidebar-floating-radius) var(--sidebar-floating-radius)
+    0;
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  z-index: 50;
+  transform: translateX(-110%);
+  pointer-events: none;
+  opacity: 0;
+  transition: transform var(--sidebar-speed) var(--sidebar-timing),
+    box-shadow 0.3s ease, border-color 0.3s ease, width 0.25s ease,
+    max-height 0.25s ease, border-radius 0.25s ease, opacity 0.18s ease;
+}
+
+.nyoka-sidebar.expanded,
+.nyoka-sidebar.mobile-open,
+.nyoka-sidebar.peek,
+.nyoka-sidebar.pinned {
+  transform: translateX(0);
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.nyoka-sidebar:not(.pinned):not(.mobile-open) {
+  animation: sidebar-pulse var(--sidebar-speed) ease;
+}
+
+@keyframes sidebar-pulse {
+  0% {
+    transform: translateX(-12%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(4%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.nyoka-sidebar.peek:not(.pinned):not(.mobile-open) {
+  box-shadow: 0 28px 52px -32px rgba(0, 0, 0, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.nyoka-sidebar.pinned,
+.nyoka-sidebar.mobile-open {
+  left: 0;
+  top: 0;
+  width: var(--sidebar-width);
+  max-height: none;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.nyoka-sidebar.mobile-open {
+  border-radius: 0;
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  padding: 1.5rem 1rem;
+  display: grid;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  transition: padding 0.3s ease;
+}
+
+.sidebar-collapsed-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.sidebar-collapsed-indicator span {
+  display: block;
+  width: 26px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(236, 72, 153, 0.75),
+    rgba(88, 96, 248, 0.75)
+  );
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.45);
+}
+
+.sidebar-subtitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0;
+  display: block;
+  margin-left: calc(0.75rem + 38px + 0.25rem);
+  margin-right: 0.75rem;
+  text-align: right;
+}
+
+.mobile-close-button {
+  display: none;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.mobile-close-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Search Container */
+.tree-search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: 0.75rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.tree-search-input {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 2.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.tree-search-input:focus {
+  border-color: var(--tree-focus-color);
+  background: rgba(236, 72, 153, 0.05);
+}
+
+.tree-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.search-kbd {
+  position: absolute;
+  right: 0.75rem;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Tree Container */
+.sidebar-tree-container {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 72, 153, 0.3) transparent;
+}
+
+.sidebar-tree-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-tree-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-tree-container::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.3);
+  border-radius: 10px;
+}
+
+.sidebar-tree-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.5);
+}
+
+.sidebar-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+/* Tree Groups */
+.tree-group-container {
+  position: relative;
+}
+
+.tree-group-container:first-of-type {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.tree-group-container:first-of-type::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 1rem;
+  right: 1rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tree-group-container + .tree-group-container {
+  height: 100%;
+}
+
+.tree-group-container ul[role="group"] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tree Items */
+.sidebar-tree-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  border-radius: 0;
+  position: relative;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.sidebar-tree-item:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-tree-item:focus {
+  outline: none;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.sidebar-tree-item.active {
+  color: white;
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.2), transparent);
+}
+
+.sidebar-tree-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ec4899, #a855f7);
+  border-radius: 0 4px 4px 0;
+}
+
+.sidebar-tree-item span:first-of-type {
+  flex: 1;
+}
+
+/* Tree Icons */
+.tree-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tree-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tree-icon svg {
+  transition: rotate 0.26s ease-out;
+}
+
+/* Nested Groups */
+.tree-group-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--sidebar-speed) var(--sidebar-timing);
+  overflow: hidden;
+}
+
+.tree-group-wrapper.collapsed {
+  grid-template-rows: 0fr;
+}
+
+.tree-group-wrapper > ul {
+  min-height: 0;
+  margin-left: 1rem;
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.tree-group-wrapper > ul::before {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 1px;
+  background: rgba(236, 72, 153, 0.2);
+}
+
+/* Search Filtering */
+.sidebar-tree[data-filtering="true"] .sidebar-tree-item {
+  opacity: 0.3;
+}
+
+.sidebar-tree[data-filtering="true"]
+  .sidebar-tree-item[data-search-match="true"] {
+  opacity: 1;
+  color: white;
+  background: rgba(236, 72, 153, 0.2);
+}
+
+.sidebar-tree[data-filtering="true"]
+  .sidebar-tree-item[data-search-related="true"] {
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: justify-content 0.3s ease;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: white;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  color: white;
+  font-weight: 500;
+}
+
+.user-badge {
+  font-size: 0.65rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 100px;
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  align-self: flex-start;
+}
+
+.sidebar-footer-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  justify-content: flex-start;
+}
+
+.sidebar-footer-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-footer-button.logout:hover {
+  background: rgba(244, 63, 94, 0.1);
+  color: #fca5a5;
+}
+
+.sidebar-footer-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.05);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-footer-button:hover::after {
+  opacity: 1;
+}
+
+/* Sidebar Language Selector */
+.sidebar-language-wrap {
+  position: relative;
+}
+
+.sidebar-language-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.sidebar-language-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(15, 15, 16, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.sidebar-language-option {
+  display: block !important;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sidebar-language-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sidebar-language-option.active {
+  background: rgba(236, 72, 153, 0.15);
+  color: #ec4899;
+}
+
+/* Layout Main Content */
+.sidebar-layout-main {
+  margin-left: 0;
+  transition: margin-left var(--sidebar-speed) var(--sidebar-timing);
+}
+
+body[data-sidebar-expanded="floating"] .sidebar-layout-main {
+  margin-left: var(--sidebar-floating-width);
+}
+
+body[data-sidebar-expanded="pinned"] .sidebar-layout-main {
+  margin-left: var(--sidebar-width);
+}
+
+@media (max-width: 768px) {
+  .sidebar-layout-main {
+    margin-left: 0 !important;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .mobile-menu-button {
+    display: flex;
+  }
+
+  .mobile-backdrop {
+    display: block;
+  }
+
+  .nyoka-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .nyoka-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-button {
+    display: flex;
+  }
+
+  .sidebar-header {
+    padding-top: 3.5rem;
+  }
+
+  .search-kbd {
+    display: none;
+  }
+}
+
+/* Scroll horizontal para tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

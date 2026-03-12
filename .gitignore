@@ -1,0 +1,55 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testes (nao subir)
+tests/
+**/__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+temp_check_*.py
+scripts/test_*.py
+scripts/test_*.sh
+
+# Cache de ferramentas
+.eslintcache
+.parcel-cache/
+.turbo/
+
+# Docker local (override com segredos)
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Dumps de banco
+*.dump
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+

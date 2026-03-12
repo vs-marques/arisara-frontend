@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Mapa Leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+        }
+        .info {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Teste Mapa Leaflet</h1>
+    
+    <div class="info">
+        <p><strong>Status:</strong> <span id="status">Carregando...</span></p>
+        <p><strong>Marcadores:</strong> <span id="markers">0</span></p>
+        <p><strong>Coordenadas AL:</strong> -16.7684, -49.4210</p>
+        <p><strong>Coordenadas RS:</strong> -29.9636, -51.0866</p>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        console.log('🚀 Iniciando teste do mapa...');
+        
+        // Inicializar mapa conforme documentação oficial
+        var map = L.map('map').setView([-14.235, -51.9253], 4);
+        
+        // Tile layer conforme documentação
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        console.log('✅ Mapa inicializado');
+        document.getElementById('status').textContent = 'Mapa inicializado ✅';
+        
+        // Adicionar marcadores de teste
+        var markers = [];
+        
+        // Marcador AL
+        var markerAL = L.marker([-16.7684, -49.4210]).addTo(map);
+        markerAL.bindPopup('<b>AL - Alagoas</b><br>1 imóvel').openPopup();
+        markers.push(markerAL);
+        
+        // Marcador RS  
+        var markerRS = L.marker([-29.9636, -51.0866]).addTo(map);
+        markerRS.bindPopup('<b>RS - Rio Grande do Sul</b><br>47 imóveis').openPopup();
+        markers.push(markerRS);
+        
+        console.log('✅ Marcadores adicionados:', markers.length);
+        document.getElementById('markers').textContent = markers.length;
+        document.getElementById('status').textContent = 'Marcadores adicionados ✅';
+        
+        // Ajustar zoom para mostrar todos os marcadores
+        var group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+        
+        console.log('✅ Teste completo - mapa deve estar funcionando');
+        document.getElementById('status').textContent = 'Teste completo ✅';
+        
+        // Log de debug
+        setTimeout(() => {
+            console.log('🔍 Verificando elementos do mapa...');
+            console.log('Container:', document.getElementById('map'));
+            console.log('Tiles encontradas:', document.querySelectorAll('.leaflet-tile').length);
+            console.log('Marcadores encontrados:', document.querySelectorAll('.leaflet-marker-icon').length);
+        }, 1000);
+    </script>
+</body>
+</html>

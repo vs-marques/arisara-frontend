@@ -1,0 +1,27 @@
+export default {
+  title: 'Admin Console',
+  tabs: { signIn: 'Entrar', signUp: 'Cadastrar-se' },
+  headings: { signIn: 'Entrar na sua conta', signUp: 'Criar uma conta', mfa: 'Confirme sua identidade' },
+  placeholders: { email: 'Digite seu email', password: 'Digite sua senha', fullName: 'Seu nome completo', mfaCode: 'Código MFA' },
+  userType: { individual: 'Pessoa Física', business: 'Pessoa Jurídica' },
+  buttons: {
+    signIn: 'Entrar',
+    signInLoading: 'Entrando...',
+    forgotPassword: 'Esqueceu sua senha?',
+    validateCode: 'Validar código',
+    validateCodeLoading: 'Validando...',
+    backToLogin: 'Voltar ao login',
+    continueSignUp: 'Continuar cadastro',
+    doLogin: 'Fazer login',
+  },
+  aria: { showPassword: 'Mostrar senha', hidePassword: 'Ocultar senha' },
+  mfa: { defaultMessage: 'Enviamos um código de verificação para o seu email.', sentTo: 'Enviado para' },
+  errors: {
+    invalidCredentials: 'Email ou senha inválidos',
+    loginFailed: 'Erro ao fazer login. Tente novamente.',
+    mfaInvalid: 'Código MFA inválido ou expirado.',
+    nameRequired: 'Nome é obrigatório',
+    emailRequired: 'Email é obrigatório',
+  },
+  signUpFooter: 'Já tem uma conta?',
+};

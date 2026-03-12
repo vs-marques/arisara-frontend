@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Mapa Leaflet + Tailwind</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <style>
+        /* CSS customizado que pode estar causando conflito */
+        .leaflet-container {
+            background: #f0f0f0;
+        }
+        
+        /* Estilos que podem estar interferindo */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">🗺️ Teste Mapa Leaflet + Tailwind</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Status do Teste</h2>
+                    <div class="space-y-2">
+                        <p><span class="font-medium">Status:</span> <span id="status" class="text-green-600">Carregando...</span></p>
+                        <p><span class="font-medium">Marcadores:</span> <span id="markers" class="text-blue-600">0</span></p>
+                        <p><span class="font-medium">Tiles carregadas:</span> <span id="tiles" class="text-purple-600">0</span></p>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Coordenadas</h2>
+                    <div class="space-y-1 text-sm">
+                        <p><span class="font-medium">AL:</span> -16.7684, -49.4210</p>
+                        <p><span class="font-medium">RS:</span> -29.9636, -51.0866</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container do mapa com classes Tailwind -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+            <div id="map" class="w-full h-[500px] rounded-lg border-2 border-gray-300"></div>
+        </div>
+        
+        <!-- Botões de teste -->
+        <div class="mt-6 flex space-x-4">
+            <button onclick="testarMapa()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                🔄 Testar Mapa
+            </button>
+            <button onclick="adicionarMarcador()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                ➕ Adicionar Marcador
+            </button>
+            <button onclick="verificarElementos()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                🔍 Verificar Elementos
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let markers = [];
+        
+        console.log('🚀 Iniciando teste do mapa com Tailwind...');
+        
+        function inicializarMapa() {
+            console.log('🗺️ Inicializando mapa...');
+            
+            // Inicializar mapa conforme documentação oficial
+            map = L.map('map').setView([-14.235, -51.9253], 4);
+            
+            // Tile layer conforme documentação
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            console.log('✅ Mapa inicializado');
+            document.getElementById('status').textContent = 'Mapa inicializado ✅';
+            
+            // Event listener para tiles carregadas
+            map.on('tileload', function() {
+                const tileCount = document.querySelectorAll('.leaflet-tile').length;
+                document.getElementById('tiles').textContent = tileCount;
+                console.log(`🔲 Tiles carregadas: ${tileCount}`);
+            });
+            
+            adicionarMarcadoresIniciais();
+        }
+        
+        function adicionarMarcadoresIniciais() {
+            // Limpar marcadores existentes
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // Marcador AL
+            var markerAL = L.marker([-16.7684, -49.4210]).addTo(map);
+            markerAL.bindPopup('<b>AL - Alagoas</b><br>1 imóvel').openPopup();
+            markers.push(markerAL);
+            
+            // Marcador RS  
+            var markerRS = L.marker([-29.9636, -51.0866]).addTo(map);
+            markerRS.bindPopup('<b>RS - Rio Grande do Sul</b><br>47 imóveis').openPopup();
+            markers.push(markerRS);
+            
+            console.log('✅ Marcadores adicionados:', markers.length);
+            document.getElementById('markers').textContent = markers.length;
+            
+            // Ajustar zoom para mostrar todos os marcadores
+            if (markers.length > 0) {
+                var group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+            
+            document.getElementById('status').textContent = 'Marcadores adicionados ✅';
+        }
+        
+        function adicionarMarcador() {
+            // Adicionar marcador aleatório no Brasil
+            const lat = -15 + Math.random() * 10; // Entre -5 e -25
+            const lng = -60 + Math.random() * 20; // Entre -40 e -80
+            
+            var marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(`<b>Marcador ${markers.length + 1}</b><br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            markers.push(marker);
+            
+            document.getElementById('markers').textContent = markers.length;
+            console.log(`➕ Marcador adicionado: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        }
+        
+        function testarMapa() {
+            console.log('🧪 Testando funcionalidades do mapa...');
+            
+            // Teste 1: Verificar se o mapa existe
+            console.log('Mapa existe:', !!map);
+            
+            // Teste 2: Verificar tiles
+            const tiles = document.querySelectorAll('.leaflet-tile');
+            console.log('Tiles encontradas:', tiles.length);
+            
+            // Teste 3: Verificar marcadores
+            const markerIcons = document.querySelectorAll('.leaflet-marker-icon');
+            console.log('Ícones de marcadores:', markerIcons.length);
+            
+            // Teste 4: Verificar container
+            const container = document.getElementById('map');
+            console.log('Container:', container);
+            console.log('Dimensões do container:', container.offsetWidth, 'x', container.offsetHeight);
+            
+            document.getElementById('status').textContent = 'Teste concluído ✅';
+        }
+        
+        function verificarElementos() {
+            console.log('🔍 Verificando elementos DOM...');
+            
+            setTimeout(() => {
+                console.log('=== VERIFICAÇÃO DETALHADA ===');
+                console.log('Container mapa:', document.getElementById('map'));
+                console.log('Tiles encontradas:', document.querySelectorAll('.leaflet-tile').length);
+                console.log('Marcadores encontrados:', document.querySelectorAll('.leaflet-marker-icon').length);
+                console.log('Elementos Leaflet:', document.querySelectorAll('[class*="leaflet"]').length);
+                
+                // Verificar CSS aplicado
+                const container = document.getElementById('map');
+                const styles = window.getComputedStyle(container);
+                console.log('CSS do container:', {
+                    width: styles.width,
+                    height: styles.height,
+                    display: styles.display,
+                    visibility: styles.visibility,
+                    opacity: styles.opacity
+                });
+                
+                document.getElementById('status').textContent = 'Verificação concluída ✅';
+            }, 1000);
+        }
+        
+        // Inicializar quando a página carregar
+        window.addEventListener('load', inicializarMapa);
+    </script>
+</body>
+</html>
