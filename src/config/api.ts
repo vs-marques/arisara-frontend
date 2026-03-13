@@ -185,6 +185,7 @@ export const API_ENDPOINTS = {
 
 // Headers padrão
 const TOKEN_KEYS = ['access_token', 'nyoka_token'];
+const COMPANY_STORAGE_KEY = 'nyoka_current_company';
 
 const getStoredToken = () => {
   for (const key of TOKEN_KEYS) {
@@ -200,12 +201,26 @@ const getStoredToken = () => {
   return null;
 };
 
+const getSelectedCompanyId = () => {
+  const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.id === 'string' && parsed.id.trim() ? parsed.id : null;
+  } catch {
+    return null;
+  }
+};
+
 export const getAuthHeaders = (token?: string | null) => {
   const authToken = token || getStoredToken();
+  const companyId = getSelectedCompanyId();
   
   return {
     'Content-Type': 'application/json',
-    ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+    ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+    ...(companyId && { 'X-Tenant-ID': companyId }),
   };
 };
 

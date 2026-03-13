@@ -32,6 +32,20 @@ const resolveInput = (input: RequestInfo): RequestInfo => {
  * ou no tokenOverride, se fornecido.
  */
 const TOKEN_KEY = 'access_token';
+const COMPANY_STORAGE_KEY = 'nyoka_current_company';
+
+const getSelectedCompanyId = (): string | null => {
+  const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const companyId = parsed?.id;
+    return typeof companyId === 'string' && companyId.trim() ? companyId : null;
+  } catch {
+    return null;
+  }
+};
 
 export const fetchWithAuth = async (
   input: RequestInfo,
@@ -39,9 +53,14 @@ export const fetchWithAuth = async (
 ): Promise<Response> => {
   const token = options.tokenOverride || localStorage.getItem(TOKEN_KEY);
   const headers = new Headers(options.headers || {});
+  const companyId = getSelectedCompanyId();
 
   if (options.auth !== false && token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (options.auth !== false && companyId) {
+    headers.set('X-Tenant-ID', companyId);
   }
 
   return fetch(resolveInput(input), {
@@ -112,10 +131,15 @@ export const fetchWithAuthForm = async <T = any>(
   options: FetchWithAuthOptions = {}
 ): Promise<T> => {
   const token = options.tokenOverride || localStorage.getItem(TOKEN_KEY);
+  const companyId = getSelectedCompanyId();
   const headers = new Headers();
 
   if (options.auth !== false && token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (options.auth !== false && companyId) {
+    headers.set('X-Tenant-ID', companyId);
   }
 
   const response = await fetch(resolveInput(input), {

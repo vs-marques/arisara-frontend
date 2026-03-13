@@ -12,6 +12,35 @@ export const api = axios.create({
   },
 })
 
+const getSelectedCompanyId = () => {
+  const raw = localStorage.getItem('nyoka_current_company');
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.id === 'string' && parsed.id.trim() ? parsed.id : null;
+  } catch {
+    return null;
+  }
+};
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  const companyId = getSelectedCompanyId();
+
+  config.headers = config.headers ?? {};
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (companyId) {
+    config.headers['X-Tenant-ID'] = companyId;
+  }
+
+  return config;
+});
+
 export const testBackendConnection = async () => {
   // console.log('[DEBUG] Testando conexão com backend');
   try {

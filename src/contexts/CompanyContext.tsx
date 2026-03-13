@@ -63,29 +63,43 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   // Verificar se deve carregar empresa salva após carregar empresas disponíveis
   useEffect(() => {
     if (isAuthenticated && user && availableCompanies.length > 0) {
-      // Só carregar empresa salva se o usuário tiver apenas 1 empresa
-      // Se tiver múltiplas empresas, deve passar pelo lobby
       const savedCompany = localStorage.getItem(STORAGE_KEY);
-      if (savedCompany && availableCompanies.length === 1) {
+
+      const syncSelectedCompany = (companyId: string | null | undefined) => {
+        if (!companyId) return false;
+        const matchedCompany = availableCompanies.find((company) => company.id === companyId);
+        if (!matchedCompany) return false;
+        setCurrentCompany(matchedCompany);
+        return true;
+      };
+
+      if (syncSelectedCompany(currentCompany?.id)) {
+        return;
+      }
+
+      if (savedCompany) {
         try {
           const company = JSON.parse(savedCompany);
-          setCurrentCompany(company);
+          if (syncSelectedCompany(company?.id)) {
+            return;
+          }
         } catch (error) {
           console.error("company_context.load_saved_error", { error: error instanceof Error ? error.message : String(error) });
           localStorage.removeItem(STORAGE_KEY);
         }
-      } else if (availableCompanies.length > 1) {
-        // Se tem múltiplas empresas, limpar empresa salva para forçar lobby
-        localStorage.removeItem(STORAGE_KEY);
-        setCurrentCompany(null);
-      } else if (availableCompanies.length === 1) {
+      }
+
+      if (availableCompanies.length === 1) {
         // Se tem apenas 1 empresa, definir automaticamente
         setCurrentCompany(availableCompanies[0]);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        setCurrentCompany(null);
       }
     } else if (isAuthenticated && user && availableCompanies.length === 0 && !user.is_superadmin) {
       console.warn("company_context.no_companies_available");
     }
-  }, [availableCompanies, isAuthenticated, user?.id, user?.is_superadmin]);
+  }, [availableCompanies, currentCompany?.id, isAuthenticated, user?.id, user?.is_superadmin]);
 
   // Salvar empresa no localStorage quando mudar
   useEffect(() => {
