@@ -94,12 +94,15 @@ export const API_ENDPOINTS = {
       return `${API_BASE_URL}/api/v1/scheduler/events${q ? `?${q}` : ''}`;
     },
     createEvent: () => `${API_BASE_URL}/api/v1/scheduler/events`,
+    deleteEvent: (eventId: string) => `${API_BASE_URL}/api/v1/scheduler/events/${eventId}`,
     integrations: {
       status: () => `${API_BASE_URL}/api/v1/scheduler/integrations/status`,
       googleAuthorize: () => `${API_BASE_URL}/api/v1/scheduler/integrations/google/authorize`,
       googleSync: () => `${API_BASE_URL}/api/v1/scheduler/integrations/google/sync`,
+      googlePush: () => `${API_BASE_URL}/api/v1/scheduler/integrations/google/push`,
       outlookAuthorize: () => `${API_BASE_URL}/api/v1/scheduler/integrations/outlook/authorize`,
       outlookSync: () => `${API_BASE_URL}/api/v1/scheduler/integrations/outlook/sync`,
+      outlookPush: () => `${API_BASE_URL}/api/v1/scheduler/integrations/outlook/push`,
       exportIcs: (fromDate?: string, toDate?: string) => {
         const params = new URLSearchParams();
         if (fromDate) params.append('from_date', fromDate);

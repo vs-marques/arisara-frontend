@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import ProfileSection from "../components/settings/ProfileSection";
 import SecuritySection from "../components/settings/SecuritySection";
 import SessionsSection from "../components/settings/SessionsSection";
+import AvailabilitySection from "../components/settings/AvailabilitySection";
 
 export default function Settings() {
   useRequireAuth();
@@ -34,6 +35,9 @@ export default function Settings() {
 
           {/* Security Section */}
           <SecuritySection />
+
+          {/* Availability Section - Horários de atendimento e agendamento */}
+          <AvailabilitySection />
 
           {/* Sessions Section */}
           <SessionsSection />

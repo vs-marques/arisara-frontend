@@ -201,6 +201,48 @@ export default {
     },
   },
 
+  // AvailabilitySection - Service hours and scheduling (§3.2.2)
+  availability: {
+    title: 'Availability',
+    subtitle: 'Set when human support and Arisara are available and when leads can book appointments.',
+    humanTitle: 'Human support',
+    humanDesc: 'Hours when operators are available. Used for routing to decide when to hand off to a human.',
+    agentTitle: 'Arisara (agent) support',
+    agentDesc: 'Hours when the AI agent can handle conversations. Avoids overlap with operator hours (e.g. agent only outside business hours).',
+    schedulingTitle: 'Booking hours',
+    schedulingDesc: 'When leads can schedule an appointment. Independent of who handles the session.',
+    timezone: 'Timezone',
+    byDay: 'By day of week',
+    days: {
+      mon: 'Mon',
+      tue: 'Tue',
+      wed: 'Wed',
+      thu: 'Thu',
+      fri: 'Fri',
+      sat: 'Sat',
+      sun: 'Sun',
+    },
+    closed: 'Closed',
+    open: 'Open',
+    toggle24x7: '24x7 availability',
+    toggle24x7On: 'Agent available 24 hours',
+    toggle24x7Off: 'Use per-day schedule',
+    toggleOutsideOperator: 'Outside operator hours',
+    toggleOutsideOperatorOn: 'Agent only when human support is closed',
+    toggleOutsideOperatorOff: 'Set custom schedule',
+    slotDuration: 'Default slot duration',
+    slotDurationHint: 'Each slot will have this duration (15 to 60 min).',
+    maxBookings: 'Max bookings per slot',
+    maxBookingsHint: 'How many appointments can share the same slot (1 to 10).',
+    save: 'Save',
+    saving: 'Saving...',
+    toasts: {
+      saved: 'Availability saved successfully.',
+      saveError: 'Error saving. Please try again.',
+      selectCompany: 'Select a company.',
+    },
+  },
+
   // Common - Common elements
   common: {
     loading: 'Loading...',

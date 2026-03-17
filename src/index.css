@@ -237,6 +237,42 @@
   outline: none;
 }
 
+.rbc-agenda-override .rbc-toolbar .agenda-btn-create {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  min-width: 11rem;
+}
+.rbc-agenda-override .rbc-toolbar .agenda-btn-create span {
+  white-space: nowrap;
+}
+.rbc-agenda-override .rbc-toolbar .agenda-btn-month-trigger {
+  border: none !important;
+  background: transparent !important;
+  font-size: 1.25rem !important;
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  justify-content: center;
+}
+.rbc-agenda-override .rbc-toolbar .agenda-btn-month-trigger span {
+  white-space: nowrap;
+}
+.rbc-agenda-override .rbc-toolbar .agenda-btn-month-trigger:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white;
+  border: none !important;
+}
+
+/* Mês/Semana/Dia: só o container é arredondado, botões retos */
+.rbc-agenda-override .rbc-toolbar .agenda-view-toggle {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.rbc-agenda-override .rbc-toolbar .agenda-view-toggle .agenda-view-btn {
+  border-radius: 0 !important;
+}
+
 /* Mês: borda única, cantos arredondados, células escuras */
 .rbc-agenda-override .rbc-month-view {
   border: 1px solid var(--rbc-border) !important;
@@ -269,9 +305,10 @@
 .rbc-agenda-override .rbc-day-bg + .rbc-day-bg {
   border-left: 1px solid var(--rbc-border) !important;
 }
-/* Hoje — faixa Nyoka (magenta sólido) */
+/* Hoje — paridade Nyoka: fundo rosa suave, número em magenta */
+.rbc-agenda-override .rbc-day-bg.rbc-today,
 .rbc-agenda-override .rbc-today {
-  background-color: var(--rbc-accent) !important;
+  background-color: rgba(236, 72, 153, 0.2) !important;
 }
 .rbc-agenda-override .rbc-off-range-bg {
   background: var(--rbc-off-range-bg) !important;
@@ -282,15 +319,16 @@
 }
 .rbc-agenda-override .rbc-date-cell {
   padding: 0.35rem 0.5rem 0.15rem 0 !important;
-  color: var(--rbc-text) !important;
+  color: #9ca3af !important;
 }
+.rbc-agenda-override .rbc-date-cell.rbc-now,
 .rbc-agenda-override .rbc-date-cell.rbc-now a {
-  color: #fff !important;
+  color: #ec4899 !important;
   font-weight: 600;
 }
 .rbc-agenda-override .rbc-row-content .rbc-date-cell.rbc-now,
 .rbc-agenda-override .rbc-row-content .rbc-date-cell.rbc-now a {
-  color: #fff !important;
+  color: #ec4899 !important;
 }
 .rbc-agenda-override .rbc-row-content .rbc-row .rbc-date-cell {
   min-height: 1.5rem;

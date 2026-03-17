@@ -201,6 +201,48 @@ export default {
     },
   },
 
+  // AvailabilitySection - Horarios de atencion y agendamiento (§3.2.2)
+  availability: {
+    title: 'Disponibilidad',
+    subtitle: 'Define cuando están disponibles el equipo humano y Arisara y en qué horarios se puede agendar.',
+    humanTitle: 'Atención humana',
+    humanDesc: 'Horario en que los operadores están disponibles. Se usa en el enrutamiento para decidir cuándo derivar al humano.',
+    agentTitle: 'Atención Arisara (agente)',
+    agentDesc: 'Horario en que la agente de IA puede atender. Evita solapamiento con el horario del operador.',
+    schedulingTitle: 'Horarios para agendar',
+    schedulingDesc: 'Cuando el lead puede agendar. Independiente de quien atienda.',
+    timezone: 'Zona horaria',
+    byDay: 'Por día de la semana',
+    days: {
+      mon: 'Lun',
+      tue: 'Mar',
+      wed: 'Mie',
+      thu: 'Jue',
+      fri: 'Vie',
+      sat: 'Sab',
+      sun: 'Dom',
+    },
+    closed: 'Cerrado',
+    open: 'Abierto',
+    toggle24x7: 'Atención 24x7',
+    toggle24x7On: 'Agente disponible 24 horas',
+    toggle24x7Off: 'Usar horarios por día',
+    toggleOutsideOperator: 'Fuera del horario del operador',
+    toggleOutsideOperatorOn: 'La agente solo cuando el humano está cerrado',
+    toggleOutsideOperatorOff: 'Definir horario propio',
+    slotDuration: 'Duración predeterminada del agendamiento',
+    slotDurationHint: 'Cada slot tendrá esta duración (15 a 60 min).',
+    maxBookings: 'Máx. agendamientos en el mismo horario',
+    maxBookingsHint: 'Cuántos agendamientos caben en el mismo slot (1 a 10).',
+    save: 'Guardar',
+    saving: 'Guardando...',
+    toasts: {
+      saved: 'Disponibilidad guardada correctamente.',
+      saveError: 'Error al guardar. Intente de nuevo.',
+      selectCompany: 'Seleccione una empresa.',
+    },
+  },
+
   // Common - Elementos comunes
   common: {
     loading: 'Cargando...',
