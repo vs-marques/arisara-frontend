@@ -270,6 +270,10 @@ export default function AvailabilitySection() {
         if (data.operator?.timezone) setOperatorTimezone(data.operator.timezone);
         if (data.agent?.rules) {
           setAgentRules(data.agent.rules);
+        }
+        if (typeof data.agent?.is_24x7 === "boolean") {
+          setAgent24x7(data.agent.is_24x7);
+        } else if (data.agent?.rules) {
           setAgent24x7(
             DAY_KEYS.every(
               (d) =>
@@ -278,6 +282,9 @@ export default function AvailabilitySection() {
                 data.agent.rules[d][0]?.end === "23:59"
             )
           );
+        }
+        if (typeof data.agent?.outside_operator_hours === "boolean") {
+          setAgentOutsideOperatorHours(data.agent.outside_operator_hours);
         }
         if (data.agent?.timezone) setAgentTimezone(data.agent.timezone);
         if (data.scheduling?.rules) setSchedulingRules(data.scheduling.rules);
@@ -317,6 +324,8 @@ export default function AvailabilitySection() {
                 ? computeInverseRules(operatorRules)
                 : agentRules,
             timezone: agentOutsideOperatorHours ? operatorTimezone : agentTimezone,
+            is_24x7: agent24x7,
+            outside_operator_hours: agentOutsideOperatorHours,
           },
           scheduling: {
             rules: schedulingRules,
@@ -504,6 +513,7 @@ export default function AvailabilitySection() {
 
       <div className="mt-8 flex justify-end">
         <Button
+          type="button"
           onClick={handleSave}
           disabled={isSaving || !currentCompany}
           className="gap-2"
