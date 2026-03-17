@@ -33,6 +33,7 @@ import {
   List,
 } from 'lucide-react';
 import { Skeleton } from '../components/ui/skeleton';
+import { toast } from 'sonner';
 
 type LeadStatus = 'novo' | 'em_contato' | 'agendado' | 'proposta' | 'convertido';
 
@@ -519,6 +520,22 @@ export default function Leads() {
           lead={selectedLead}
           open={!!selectedLead}
           onOpenChange={(open) => !open && setSelectedLead(null)}
+          onEventScheduled={() => {
+            if (selectedLead) {
+              setLeads((prev) =>
+                prev.map((l) =>
+                  l.id === selectedLead.id ? { ...l, status: 'agendado' } : l,
+                ),
+              );
+              setSelectedLead(null);
+            }
+            fetchLeads();
+            toast.success(
+              t('agenda.createEventSuccess', {
+                defaultValue: 'Evento criado com sucesso.',
+              }),
+            );
+          }}
         />
       </div>
     </Layout>

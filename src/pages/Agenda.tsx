@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { EventManager, type Event as UiEvent } from '@/components/ui/event-manager';
+import { EventManager, type Event as UiEvent, type LeadOption as UiLeadOption } from '@/components/ui/event-manager';
 
 const BROWSER_LOCALE: Record<string, string> = {
   pt: 'pt-BR',
@@ -54,6 +54,7 @@ interface AgendaEvent {
   category?: string | null;
   color?: string | null;
   tags?: string[] | null;
+  leadId?: string | null;
 }
 
 export default function Agenda() {
@@ -80,6 +81,7 @@ export default function Agenda() {
   const [eventToDelete, setEventToDelete] = useState<{ id: string; title?: string } | null>(null);
   const [deleteEventConfirmKeyword, setDeleteEventConfirmKeyword] = useState('');
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+  const [leads, setLeads] = useState<UiLeadOption[]>([]);
 
   const fetchIntegrationsStatus = useCallback(async () => {
     try {
@@ -95,6 +97,25 @@ export default function Agenda() {
       // ignore
     } finally {
       setIntegrationsLoading(false);
+    }
+  }, []);
+
+  const fetchLeads = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.crm.leads(), {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { id: string; name?: string | null; channel?: string | null }[];
+      setLeads(
+        (data ?? []).map((l) => ({
+          id: l.id,
+          name: l.name ?? '',
+          channel: l.channel ?? 'webchat',
+        })),
+      );
+    } catch {
+      setLeads([]);
     }
   }, []);
 
@@ -155,7 +176,8 @@ export default function Agenda() {
   useEffect(() => {
     fetchIntegrationsStatus();
     fetchEvents();
-  }, [fetchIntegrationsStatus, fetchEvents]);
+    fetchLeads();
+  }, [fetchIntegrationsStatus, fetchEvents, fetchLeads]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -533,6 +555,7 @@ export default function Agenda() {
               defaultView="month"
               categories={['Meeting', 'Task', 'Reminder', 'Personal', 'Chat', 'Google Calendar', 'Outlook']}
               availableTags={['Importante', 'Urgente', 'Cliente', 'Interno']}
+              leadOptions={leads}
               onEventCreate={async (payload) => {
                 try {
                   const res = await fetch(API_ENDPOINTS.scheduler.createEvent(), {
@@ -545,6 +568,7 @@ export default function Agenda() {
                       contactName: payload.contactName ?? '',
                       contactChannel: payload.contactChannel ?? 'Webchat',
                       source: 'arisara_chat',
+                      leadId: (payload as any).leadId,
                       category: payload.category ?? undefined,
                       color: payload.color ?? undefined,
                       tags: payload.tags?.length ? payload.tags : undefined,
