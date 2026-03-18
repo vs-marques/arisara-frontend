@@ -1,7 +1,7 @@
 export default {
   title: 'Discovery & Connectors',
   subtitle:
-    'แคตตาล็อก API ภายนอกแบบรวมศูนย์ อนุมัติ endpoints ที่อริสราชสามารถเรียกได้ระหว่างการสนับสนุนหรือ data pipelines',
+    'แคตตาล็อก API ภายนอกแบบรวมศูนย์ อนุมัติ endpoints ที่อริสราสามารถเรียกได้ระหว่างการสนับสนุนหรือ data pipelines',
   status: {
     pending: 'Pending',
     approved: 'Approved',
@@ -102,7 +102,7 @@ export default {
   },
   vault: {
     title: 'New Vault credential',
-    description: 'บันทึก tokens ชื่อผู้ใช้และรหัสผ่านแบบเข้ารหัส อริสราชจะใช้ข้อมูลนี้รับรองความถูกต้องกับ connectors',
+    description: 'บันทึก tokens ชื่อผู้ใช้และรหัสผ่านแบบเข้ารหัส อริสราจะใช้ข้อมูลนี้รับรองความถูกต้องกับ connectors',
     saveCredential: 'Save credential',
     referenceLabel: 'Unique identifier',
     referencePlaceholder: 'arisara/default',
@@ -136,7 +136,7 @@ export default {
     descriptionOptional: 'Description (optional)',
     descriptionPlaceholder: 'Integration context, responsible team, documentation links...',
     auth: 'Authentication',
-    authHelp: 'เชื่อมต่อข้อมูลประจำตัวที่เก็บใน Vault เพื่อให้อริสราชรับรองความถูกต้องกับ API ภายนอก',
+    authHelp: 'เชื่อมต่อข้อมูลประจำตัวที่เก็บใน Vault เพื่อให้อริสรารับรองความถูกต้องกับ API ภายนอก',
     authType: 'Authentication type',
     none: 'No authentication',
     bearer: 'Bearer token',

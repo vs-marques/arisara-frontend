@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { getMyProfile } from '../services/profileService';
@@ -26,6 +27,12 @@ import {
   CalendarDays,
 } from 'lucide-react';
 
+import { planet } from '@lucide/lab';
+
+const SaturnoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon iconNode={planet} {...props} />
+);
+
 // Estrutura de navegação com chaves i18n (traduzida no componente)
 interface NavItemRaw {
   id: string;
@@ -44,6 +51,7 @@ const NAVIGATION_TREE_RAW: NavGroupRaw[] = [
       { id: 'dashboard', labelKey: 'dashboard', href: '/dashboard', icon: Home },
       { id: 'ai-maturity', labelKey: 'evolutionIA', href: '/ai-maturity', icon: Sparkles },
       { id: 'chat', labelKey: 'chat', href: '/chat', icon: MessageSquare },
+      { id: 'saturno', labelKey: 'saturno', href: '/saturno', icon: SaturnoIcon },
     ],
   },
   {

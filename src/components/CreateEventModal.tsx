@@ -75,6 +75,7 @@ export function CreateEventModal({
   const [leads, setLeads] = useState<LeadOption[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [generateSaturnoRoom, setGenerateSaturnoRoom] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -88,6 +89,7 @@ export function CreateEventModal({
     setColor(defaultColors[0].value);
     setTags([]);
     setSelectedLeadId(defaultLead?.id ?? null);
+    setGenerateSaturnoRoom(false);
   }, [open, defaultLead?.id]);
 
   useEffect(() => {
@@ -156,6 +158,28 @@ export function CreateEventModal({
         const err = await res.json().catch(() => ({}));
         throw new Error((err.detail as string) || 'Erro ao criar evento');
       }
+      const created = (await res.json()) as { id?: string };
+
+      // Opcional: criar/vincular sala Saturno para este evento (mesma API do Nyoka)
+      if (generateSaturnoRoom && created?.id) {
+        try {
+          const saturnoRes = await fetch(API_ENDPOINTS.saturno.meetSessionCreate(), {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              eventId: created.id,
+              regenerate: false,
+            }),
+          });
+          if (!saturnoRes.ok) {
+            const satErr = await saturnoRes.json().catch(() => ({}));
+            console.error('Erro ao criar sala Saturno (Arisara):', satErr);
+          }
+        } catch (e) {
+          console.error('Erro ao chamar API Saturno Meet (Arisara)', e);
+        }
+      }
+
       if (!defaultLead) {
         toast.success(
           t('agenda.createEventSuccess', {
@@ -213,6 +237,25 @@ export function CreateEventModal({
               })}
               rows={3}
               className="min-h-[4rem] border-white/10 bg-white/5 text-white placeholder:text-gray-500"
+            />
+          </div>
+          <div className="flex items-start justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-white">
+                {t('saturno.generateRoomTitle', { defaultValue: 'Gerar sala Saturno' })}
+              </p>
+              <p className="text-xs text-gray-400">
+                {t('saturno.generateRoomDescription', {
+                  defaultValue:
+                    'Cria uma sala Saturno para este evento e preenche a descrição com o convite (sem enviar e-mail).',
+                })}
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={generateSaturnoRoom}
+              onChange={(e) => setGenerateSaturnoRoom(e.target.checked)}
+              className="mt-1 h-4 w-4 cursor-pointer rounded border-white/40 bg-black/40 accent-pink-500"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

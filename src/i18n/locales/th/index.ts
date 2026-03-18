@@ -13,6 +13,7 @@ import channels from './channels';
 import discovery from './discovery';
 import users from './users';
 import agenda from './agenda';
+import saturno from './saturno';
 import leads from './leads';
 
 export default {
@@ -31,5 +32,6 @@ export default {
   discovery,
   users,
   agenda,
+  saturno,
   leads,
 };

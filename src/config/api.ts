@@ -113,6 +113,13 @@ export const API_ENDPOINTS = {
     },
   },
   
+  // Saturno (salas de vídeo) - paridade Nyoka
+  saturno: {
+    meetSessionCreate: () => `${API_BASE_URL}/api/v1/saturno/meet/sessions`,
+    upcomingMeetings: () => `${API_BASE_URL}/api/v1/saturno/meet/upcoming`,
+    instantMeet: () => `${API_BASE_URL}/api/v1/saturno/meet/instant`,
+  },
+  
   // Contacts
   contacts: {
     list: (companyId: string, search?: string) => {

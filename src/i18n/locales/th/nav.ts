@@ -5,6 +5,7 @@ export default {
   dashboard: 'แดชบอร์ด',
   evolutionIA: 'วิวัฒนาการ AI',
   chat: 'แชท',
+  saturno: 'ดาวเสาร์',
   leads: 'ลูกค้า',
   agenda: 'วาระงาน',
   documents: 'เอกสาร',
