@@ -1,19 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Room, RoomEvent, Track } from 'livekit-client';
 import Layout from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, MonitorUp, SmilePlus, MoreHorizontal, MessageCircle, Sparkles, Volume2, Droplets, CircleDot } from 'lucide-react';
-
-interface MockParticipant {
-  id: string;
-  name: string;
-  isSpeaking?: boolean;
-  micMuted?: boolean;
-}
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { VideoTrackView } from '@/components/saturno/VideoTrackView';
+import {
+  buildMeetParticipants,
+  primaryVideoTrack,
+  type MeetParticipantView,
+} from '@/components/saturno/saturnoMeetLiveModel';
 
 interface ChatMessage {
   id: string;
@@ -33,20 +34,22 @@ interface UiParticipant {
   hasVideo?: boolean;
 }
 
-const participantsMock: MockParticipant[] = [
-  { id: '1', name: 'Você', isSpeaking: true },
-  { id: '2', name: 'Ana Silva' },
-  { id: '3', name: 'Carlos Lima', micMuted: true },
-  { id: '4', name: 'João Souza' },
-];
-
 export default function SaturnoMeetLive() {
   const { code } = useParams<{ code: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const [lkRoom, setLkRoom] = useState<Room | null>(null);
+  const roomRef = useRef<Room | null>(null);
+  /** Força re-render quando participantes/tracks mudam (objeto Room muta in-place). */
+  const [roomEpoch, setRoomEpoch] = useState(0);
+  const bumpRoom = useCallback(() => setRoomEpoch((e) => e + 1), []);
+
+  const [connectPhase, setConnectPhase] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const [micEnabled, setMicEnabled] = useState(true);
   const [camEnabled, setCamEnabled] = useState(true);
-  const [screenSharing, setScreenSharing] = useState(false);
   const [showSidePane, setShowSidePane] = useState(true);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('auto');
   const [maxTiles, setMaxTiles] = useState(16);
@@ -58,12 +61,6 @@ export default function SaturnoMeetLive() {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const mainVideoRef = useRef<HTMLVideoElement | null>(null);
-  const selfCamRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const screenStreamRef = useRef<MediaStream | null>(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
-
   const wsRef = useRef<WebSocket | null>(null);
   const [clientId] = useState(() => {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -72,10 +69,44 @@ export default function SaturnoMeetLive() {
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   });
 
-  const participants = participantsMock;
-  const mainParticipant = participants[0];
-  const sideParticipants = participants.slice(1);
-  const showMainVideo = (screenSharing || camEnabled) && !videoError;
+  const views: MeetParticipantView[] = useMemo(() => {
+    if (!lkRoom) return [];
+    return buildMeetParticipants(lkRoom);
+  }, [lkRoom, roomEpoch]);
+
+  const screenSharingLive = useMemo(() => {
+    if (!lkRoom) return false;
+    return Boolean(lkRoom.localParticipant.getTrackPublication(Track.Source.ScreenShare)?.track);
+  }, [lkRoom, roomEpoch]);
+
+  const mainView = useMemo(() => {
+    if (!views.length) return null;
+    const withScreen = views.find((v) => v.screenTrack);
+    if (withScreen) return withScreen;
+    const local = views.find((v) => v.isLocal);
+    if (local) return local;
+    return views[0];
+  }, [views]);
+
+  const shelfViews = useMemo(() => {
+    if (!mainView) return [];
+    return views.filter((v) => v.sid !== mainView.sid);
+  }, [views, mainView]);
+
+  const localView = useMemo(() => views.find((v) => v.isLocal), [views]);
+
+  const participants = views.map((v) => ({
+    id: v.sid,
+    name: v.name,
+    isSpeaking: v.isSpeaking,
+    micMuted: v.micMuted,
+  }));
+  const mainParticipant = mainView
+    ? { name: mainView.name, isSpeaking: mainView.isSpeaking }
+    : { name: t('saturno.live.you', { defaultValue: 'Você' }), isSpeaking: false };
+
+  const showMainVideo =
+    connectPhase === 'connected' && !!mainView && !!primaryVideoTrack(mainView) && !connectionError;
 
   const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -92,22 +123,20 @@ export default function SaturnoMeetLive() {
     return () => ro.disconnect();
   }, [showSidePane]);
 
-  const uiParticipantsAll: UiParticipant[] = [
-    { id: 'self', name: mainParticipant.name, isSelf: true, micMuted: !micEnabled, hasVideo: camEnabled },
-    ...sideParticipants.map((p) => ({
-      id: p.id,
-      name: p.name,
-      micMuted: !!p.micMuted,
-      hasVideo: true,
-    })),
-  ];
+  const uiParticipantsAll: UiParticipant[] = views.map((v) => ({
+    id: v.sid,
+    name: v.name,
+    isSelf: v.isLocal,
+    micMuted: v.micMuted,
+    hasVideo: !!(v.cameraTrack || v.screenTrack),
+  }));
 
   const uiParticipants = hideTilesWithoutVideo
     ? uiParticipantsAll.filter((p) => p.hasVideo)
     : uiParticipantsAll;
 
   const effectiveLayout: LayoutMode = (() => {
-    if (screenSharing) return 'spotlight';
+    if (screenSharingLive) return 'spotlight';
     if (layoutMode !== 'auto') return layoutMode;
     if (showSidePane) return 'sidebar';
     return uiParticipants.length >= 3 ? 'tiled' : 'spotlight';
@@ -133,60 +162,67 @@ export default function SaturnoMeetLive() {
   };
 
   useEffect(() => {
-    const startVideo = async () => {
-      if (!camEnabled) {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((t) => t.stop());
-          streamRef.current = null;
-        }
-        if (selfCamRef.current) selfCamRef.current.srcObject = null;
-        if (mainVideoRef.current && !screenSharing) mainVideoRef.current.srcObject = null;
-        return;
-      }
+    if (!code) return;
+    let cancelled = false;
+    const room = new Room({ adaptiveStream: true, dynacast: true });
 
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setVideoError(
-          t('saturno.prejoin.videoUnsupported', {
-            defaultValue: 'Seu navegador não suporta acesso à câmera.',
-          })
-        );
-        return;
-      }
-
-      try {
-        setVideoError(null);
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
-        streamRef.current = stream;
-        if (selfCamRef.current) {
-          selfCamRef.current.srcObject = stream;
-          await selfCamRef.current.play().catch(() => {});
-        }
-        if (mainVideoRef.current && !screenSharing) {
-          mainVideoRef.current.srcObject = stream;
-          await mainVideoRef.current.play().catch(() => {});
-        }
-      } catch {
-        setVideoError(
-          t('saturno.prejoin.videoError', {
-            defaultValue: 'Não foi possível acessar sua câmera.',
-          })
-        );
-      }
+    const subscribe = (r: Room) => {
+      const ev = () => bumpRoom();
+      r.on(RoomEvent.ParticipantConnected, ev);
+      r.on(RoomEvent.ParticipantDisconnected, ev);
+      r.on(RoomEvent.TrackSubscribed, ev);
+      r.on(RoomEvent.TrackUnsubscribed, ev);
+      r.on(RoomEvent.LocalTrackPublished, ev);
+      r.on(RoomEvent.LocalTrackUnpublished, ev);
+      r.on(RoomEvent.ActiveSpeakersChanged, ev);
+      r.on(RoomEvent.TrackMuted, ev);
+      r.on(RoomEvent.TrackUnmuted, ev);
     };
 
-    startVideo().catch(() => {});
+    (async () => {
+      setConnectPhase('connecting');
+      setConnectionError(null);
+      try {
+        const res = await fetch(API_ENDPOINTS.saturno.meetToken(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ roomName: code }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(
+            (typeof err.detail === 'string' && err.detail) ||
+              (Array.isArray(err.detail) && err.detail[0]?.msg) ||
+              'Não foi possível entrar na sala (token LiveKit).'
+          );
+        }
+        const data = (await res.json()) as { url: string; token: string };
+        if (cancelled) return;
+        subscribe(room);
+        await room.connect(data.url, data.token);
+        await room.localParticipant.setCameraEnabled(true);
+        await room.localParticipant.setMicrophoneEnabled(true);
+        setMicEnabled(true);
+        setCamEnabled(true);
+        roomRef.current = room;
+        setLkRoom(room);
+        setConnectPhase('connected');
+        bumpRoom();
+      } catch (e) {
+        if (!cancelled) {
+          setConnectionError(e instanceof Error ? e.message : 'Erro ao conectar ao LiveKit.');
+          setConnectPhase('error');
+        }
+      }
+    })();
 
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-      if (selfCamRef.current) selfCamRef.current.srcObject = null;
+      cancelled = true;
+      room.disconnect();
+      roomRef.current = null;
+      setLkRoom(null);
     };
-  }, [camEnabled, screenSharing, t]);
+  }, [code, bumpRoom]);
   useEffect(() => {
     if (!code) return;
 
@@ -266,49 +302,38 @@ export default function SaturnoMeetLive() {
   };
 
   const handleToggleScreenShare = async () => {
-    if (screenSharing) {
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => t.stop());
-        screenStreamRef.current = null;
-      }
-      setScreenSharing(false);
-
-      if (mainVideoRef.current) {
-        if (camEnabled && streamRef.current) {
-          mainVideoRef.current.srcObject = streamRef.current;
-          await mainVideoRef.current.play().catch(() => {});
-        } else {
-          mainVideoRef.current.srcObject = null;
-        }
-      }
-      return;
-    }
-
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      return;
-    }
-
+    if (!lkRoom) return;
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
-      screenStreamRef.current = screenStream;
-      setScreenSharing(true);
-      if (mainVideoRef.current) {
-        mainVideoRef.current.srcObject = screenStream;
-        await mainVideoRef.current.play().catch(() => {});
-      }
-
-      const [videoTrack] = screenStream.getVideoTracks();
-      if (videoTrack) {
-        videoTrack.addEventListener('ended', () => {
-          handleToggleScreenShare().catch(() => {});
-        });
-      }
+      await lkRoom.localParticipant.setScreenShareEnabled(!screenSharingLive);
+      bumpRoom();
     } catch {
-      // Usuário cancelou ou erro
+      // usuário cancelou ou permissão negada
     }
+  };
+
+  const handleToggleMic = async () => {
+    if (!lkRoom) return;
+    const next = !lkRoom.localParticipant.isMicrophoneEnabled;
+    await lkRoom.localParticipant.setMicrophoneEnabled(next);
+    setMicEnabled(next);
+    bumpRoom();
+  };
+
+  const handleToggleCam = async () => {
+    if (!lkRoom) return;
+    const next = !lkRoom.localParticipant.isCameraEnabled;
+    await lkRoom.localParticipant.setCameraEnabled(next);
+    setCamEnabled(next);
+    bumpRoom();
+  };
+
+  const handleLeave = () => {
+    try {
+      roomRef.current?.disconnect();
+    } catch {
+      /* noop */
+    }
+    navigate('/saturno');
   };
 
   return (
@@ -326,70 +351,65 @@ export default function SaturnoMeetLive() {
                 })}
               </div>
 
-              {/* Vídeo real ou avatar mock */}
               {effectiveLayout === 'tiled' ? (
                 <div ref={gridRef} className="h-full w-full p-3">
                   {(() => {
-                    const visible = uiParticipants.slice(0, Math.max(1, maxTiles));
+                    const visible = views.slice(0, Math.max(1, maxTiles));
                     const cols = computeGridCols(visible.length, gridSize.width, gridSize.height, 16 / 9);
                     return (
                       <div
                         className="grid h-full w-full gap-3"
                         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
                       >
-                        {visible.map((p) => (
-                          <div
-                            key={p.id}
-                            className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60"
-                          >
-                            <div className="absolute inset-0">
-                              {p.isSelf && camEnabled && streamRef.current ? (
-                                <video
-                                  ref={(el) => {
-                                    if (!el) return;
-                                    if (el.srcObject !== streamRef.current) el.srcObject = streamRef.current;
-                                    el.play().catch(() => {});
-                                  }}
-                                  className={`h-full w-full object-cover ${blurEnabled ? 'blur-sm' : ''}`}
-                                  muted
-                                  autoPlay
-                                  playsInline
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-black">
-                                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
-                                    {p.name.charAt(0).toUpperCase()}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="relative z-10 flex h-full items-end justify-between p-3">
-                              <span className="rounded-full bg-black/60 px-2 py-0.5 text-[11px] text-white">
-                                {p.name}
-                              </span>
-                              <span className="rounded-full bg-black/60 px-2 py-0.5">
-                                {p.micMuted ? (
-                                  <MicOff className="h-3 w-3 text-red-400" />
+                        {visible.map((v) => {
+                          const vt = primaryVideoTrack(v);
+                          return (
+                            <div
+                              key={v.sid}
+                              className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60"
+                            >
+                              <div className="absolute inset-0">
+                                {vt ? (
+                                  <VideoTrackView
+                                    track={vt}
+                                    muted={v.isLocal}
+                                    className={`h-full w-full object-cover ${blurEnabled ? 'blur-sm' : ''}`}
+                                  />
                                 ) : (
-                                  <Mic className="h-3 w-3 text-gray-200" />
+                                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-black">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
+                                      {v.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  </div>
                                 )}
-                              </span>
+                              </div>
+                              <div className="relative z-10 flex h-full items-end justify-between p-3">
+                                <span className="rounded-full bg-black/60 px-2 py-0.5 text-[11px] text-white">
+                                  {v.name}
+                                </span>
+                                <span className="rounded-full bg-black/60 px-2 py-0.5">
+                                  {v.micMuted ? (
+                                    <MicOff className="h-3 w-3 text-red-400" />
+                                  ) : (
+                                    <Mic className="h-3 w-3 text-gray-200" />
+                                  )}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}
                 </div>
               ) : (
                 <>
-                  {showMainVideo ? (
-                    <video
-                      ref={mainVideoRef}
+                  {/* Vídeo principal LiveKit ou avatar */}
+                  {showMainVideo && mainView ? (
+                    <VideoTrackView
+                      track={primaryVideoTrack(mainView)}
+                      muted={mainView.isLocal}
                       className={`h-full w-full object-cover ${blurEnabled ? 'blur-sm' : ''}`}
-                      muted
-                      autoPlay
-                      playsInline
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-black">
@@ -399,74 +419,83 @@ export default function SaturnoMeetLive() {
                     </div>
                   )}
 
-              {/* Nome e status no canto inferior esquerdo */}
-              <div className="absolute bottom-4 left-4 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
-                {screenSharing ? t('saturno.live.sharingScreen', { defaultValue: 'Você está apresentando' }) : mainParticipant.name}
-                {mainParticipant.isSpeaking && (
-                  <span className="ml-1 text-[10px] text-pink-300">
-                    {t('saturno.live.speaking', { defaultValue: 'falando' })}
-                  </span>
-                )}
-              </div>
+                  {/* Nome e status no canto inferior esquerdo */}
+                  <div className="absolute bottom-4 left-4 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
+                    {screenSharingLive
+                      ? t('saturno.live.sharingScreen', { defaultValue: 'Você está apresentando' })
+                      : mainParticipant.name}
+                    {mainParticipant.isSpeaking && (
+                      <span className="ml-1 text-[10px] text-pink-300">
+                        {t('saturno.live.speaking', { defaultValue: 'falando' })}
+                      </span>
+                    )}
+                  </div>
 
-              {/* Faixa de participantes pequenos na lateral direita (desktop) */}
-              {(effectiveLayout === 'spotlight' || effectiveLayout === 'sidebar') && (
-                <div className="pointer-events-none absolute inset-y-4 right-4 hidden w-56 flex-col gap-2 md:flex">
-                {screenSharing && (
-                  <div className="pointer-events-auto relative flex h-24 flex-none items-center justify-between overflow-hidden rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-white">
-                    <div className="absolute inset-0">
-                      {camEnabled ? (
-                        <video
-                          ref={selfCamRef}
-                          className={`h-full w-full object-cover ${blurEnabled ? 'blur-sm' : ''}`}
-                          muted
-                          autoPlay
-                          playsInline
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-black/60">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
-                            {mainParticipant.name.charAt(0).toUpperCase()}
+                  {/* Prateleira de participantes (Spotlight/Sidebar) */}
+                  {(effectiveLayout === 'spotlight' || effectiveLayout === 'sidebar') && (
+                    <div className="pointer-events-none absolute inset-y-4 right-4 hidden w-56 flex-col gap-2 md:flex">
+                      {screenSharingLive && localView && (
+                        <div className="pointer-events-auto relative flex h-24 flex-none items-center justify-between overflow-hidden rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-white">
+                          <div className="absolute inset-0">
+                            {localView.cameraTrack && camEnabled ? (
+                              <VideoTrackView
+                                track={localView.cameraTrack}
+                                muted
+                                className={`h-full w-full object-cover ${blurEnabled ? 'blur-sm' : ''}`}
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-black/60">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
+                                  {mainParticipant.name.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="relative z-10 flex w-full items-end justify-between">
+                            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[11px]">
+                              {mainParticipant.name}
+                            </span>
+                            <span className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5">
+                              {micEnabled ? (
+                                <Mic className="h-3 w-3 text-gray-200" />
+                              ) : (
+                                <MicOff className="h-3 w-3 text-red-400" />
+                              )}
+                            </span>
                           </div>
                         </div>
                       )}
+                      {shelfViews.map((p) => {
+                        const vt = primaryVideoTrack(p);
+                        return (
+                          <div
+                            key={p.sid}
+                            className="pointer-events-auto flex h-24 flex-none items-center justify-between overflow-hidden rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-white"
+                          >
+                            <div className="relative flex h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-black/80">
+                              {vt ? (
+                                <VideoTrackView track={vt} muted={p.isLocal} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[11px] font-medium">
+                                  {p.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex min-w-0 flex-1 flex-col items-end gap-1 pl-2">
+                              <span className="max-w-[80px] truncate">{p.name}</span>
+                              <div className="flex items-center gap-1">
+                                {p.micMuted ? (
+                                  <MicOff className="h-3 w-3 text-red-400" />
+                                ) : (
+                                  <Mic className="h-3 w-3 text-gray-300" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="relative z-10 flex w-full items-end justify-between">
-                      <span className="rounded-full bg-black/60 px-2 py-0.5 text-[11px]">
-                        {mainParticipant.name}
-                      </span>
-                      <span className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5">
-                        {micEnabled ? (
-                          <Mic className="h-3 w-3 text-gray-200" />
-                        ) : (
-                          <MicOff className="h-3 w-3 text-red-400" />
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {sideParticipants.map((p) => (
-                  <div
-                    key={p.id}
-                    className="pointer-events-auto flex h-24 flex-none items-center justify-between overflow-hidden rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-xs text-white"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[11px]">
-                        {p.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="max-w-[80px] truncate">{p.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {p.micMuted ? (
-                        <MicOff className="h-3 w-3 text-red-400" />
-                      ) : (
-                        <Mic className="h-3 w-3 text-gray-300" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-                </div>
-              )}
+                  )}
                 </>
               )}
 
@@ -489,7 +518,9 @@ export default function SaturnoMeetLive() {
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 rounded-full bg-white/10 text-white hover:bg-white/20"
-                    onClick={() => setMicEnabled((v) => !v)}
+                    onClick={() => {
+                      handleToggleMic().catch(() => {});
+                    }}
                   >
                     {micEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4 text-red-400" />}
                   </Button>
@@ -498,7 +529,9 @@ export default function SaturnoMeetLive() {
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 rounded-full bg-white/10 text-white hover:bg-white/20"
-                    onClick={() => setCamEnabled((v) => !v)}
+                    onClick={() => {
+                      handleToggleCam().catch(() => {});
+                    }}
                   >
                     {camEnabled ? (
                       <Video className="h-4 w-4" />
@@ -511,7 +544,7 @@ export default function SaturnoMeetLive() {
                     variant="ghost"
                     size="icon"
                     className={`h-9 w-9 rounded-full ${
-                      screenSharing ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                      screenSharingLive ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                     onClick={() => {
                       handleToggleScreenShare().catch(() => {});
@@ -657,15 +690,23 @@ export default function SaturnoMeetLive() {
                     variant="destructive"
                     size="icon"
                     className="h-9 w-9 rounded-full bg-red-600 text-white hover:bg-red-500"
+                    onClick={handleLeave}
                   >
                     <PhoneOff className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {videoError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-4 text-center text-xs text-gray-200">
-                  {videoError}
+              {connectPhase === 'connecting' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-4 text-center text-sm text-gray-200">
+                  {t('saturno.live.connectingLivekit', {
+                    defaultValue: 'Conectando à sala LiveKit…',
+                  })}
+                </div>
+              )}
+              {connectionError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-4 text-center text-xs text-red-200">
+                  {connectionError}
                 </div>
               )}
             </div>

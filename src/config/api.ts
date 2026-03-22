@@ -118,6 +118,7 @@ export const API_ENDPOINTS = {
     meetSessionCreate: () => `${API_BASE_URL}/api/v1/saturno/meet/sessions`,
     upcomingMeetings: () => `${API_BASE_URL}/api/v1/saturno/meet/upcoming`,
     instantMeet: () => `${API_BASE_URL}/api/v1/saturno/meet/instant`,
+    meetToken: () => `${API_BASE_URL}/api/v1/saturno/meet/token`,
   },
   
   // Contacts
