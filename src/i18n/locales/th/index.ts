@@ -14,6 +14,9 @@ import discovery from './discovery';
 import users from './users';
 import agenda from './agenda';
 import saturno from './saturno';
+import saturnoPrejoin from './saturno-prejoin';
+import saturnoLive from './saturno-live';
+import saturnoMeetThanks from './saturno-meet-thanks';
 import leads from './leads';
 
 export default {
@@ -32,6 +35,11 @@ export default {
   discovery,
   users,
   agenda,
-  saturno,
+  saturno: {
+    ...saturno,
+    ...saturnoPrejoin,
+    ...saturnoLive,
+    ...saturnoMeetThanks,
+  },
   leads,
 };

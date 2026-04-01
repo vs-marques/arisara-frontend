@@ -16,6 +16,8 @@ import Agenda from './pages/Agenda';
 import Saturno from './pages/Saturno';
 import SaturnoMeetPrejoin from './pages/SaturnoMeet';
 import SaturnoMeetLive from './pages/SaturnoMeetLive';
+import SaturnoMeetThanks from './pages/SaturnoMeetThanks';
+import { SaturnoRedirect } from './components/SaturnoRedirect';
 import AIConfig from './pages/AIConfig';
 import Settings from './pages/Settings';
 import Organizations from './pages/Organizations';
@@ -51,9 +53,54 @@ function App() {
           <Route path="/documents/upload" element={<Documents />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/agenda" element={<Agenda />} />
-          <Route path="/saturno/meet/:code" element={<SaturnoMeetPrejoin />} />
-          <Route path="/saturno/meet/:code/live" element={<SaturnoMeetLive />} />
-          <Route path="/saturno" element={<Saturno />} />
+          <Route
+            path="/saturno/m/:meetId"
+            element={
+              <SaturnoRedirect>
+                <SaturnoMeetPrejoin />
+              </SaturnoRedirect>
+            }
+          />
+          <Route
+            path="/saturno/m/:meetId/live"
+            element={
+              <SaturnoRedirect>
+                <SaturnoMeetLive />
+              </SaturnoRedirect>
+            }
+          />
+          <Route
+            path="/saturno/meet/:code"
+            element={
+              <SaturnoRedirect>
+                <SaturnoMeetPrejoin />
+              </SaturnoRedirect>
+            }
+          />
+          <Route
+            path="/saturno/meet/:code/live"
+            element={
+              <SaturnoRedirect>
+                <SaturnoMeetLive />
+              </SaturnoRedirect>
+            }
+          />
+          <Route
+            path="/saturno/thanks"
+            element={
+              <SaturnoRedirect>
+                <SaturnoMeetThanks />
+              </SaturnoRedirect>
+            }
+          />
+          <Route
+            path="/saturno"
+            element={
+              <SaturnoRedirect>
+                <Saturno />
+              </SaturnoRedirect>
+            }
+          />
           <Route path="/ai/prompt" element={<AIConfig />} />
           <Route path="/ai/model" element={<AIConfig />} />
           <Route path="/ai/examples" element={<AIConfig />} />

@@ -16,6 +16,7 @@ import agenda from './agenda';
 import saturno from './saturno';
 import saturnoPrejoin from './saturno-prejoin';
 import saturnoLive from './saturno-live';
+import saturnoMeetThanks from './saturno-meet-thanks';
 import leads from './leads';
 
 export default {
@@ -38,6 +39,7 @@ export default {
     ...saturno,
     ...saturnoPrejoin,
     ...saturnoLive,
+    ...saturnoMeetThanks,
   },
   leads,
 };
