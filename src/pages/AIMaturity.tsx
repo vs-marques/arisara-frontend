@@ -5,7 +5,8 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import Layout from '../components/Layout';
 import PeriodFilter from '../components/PeriodFilter';
 import { usePeriod } from '../contexts/PeriodContext';
-import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import { API_ENDPOINTS, getAuthHeaders, resolveCompanyIdForApi } from '../config/api';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { 
   Brain,
   Target,
@@ -49,6 +50,7 @@ interface EvolutionPoint {
 export function AIMaturity() {
   useRequireAuth();
   const { t } = useTranslation();
+  const { currentWorkspace } = useWorkspace();
   const { period, setPeriod, getDays, getHours, getStartDate, getEndDate } = usePeriod();
 
   const [overallMaturity, setOverallMaturity] = useState(0);
@@ -151,7 +153,7 @@ export function AIMaturity() {
       }
       
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveCompanyIdForApi(currentWorkspace, userData);
       
       if (!companyId) {
         throw new Error(t('aimaturity.errors.noCompany'));
@@ -367,7 +369,7 @@ export function AIMaturity() {
         setEvolution([]);
         setDataWarning(t('aimaturity.errors.loadError'));
       }
-  }, [period, getDays, getStartDate, getEndDate]);
+  }, [period, getDays, getStartDate, getEndDate, currentWorkspace]);
 
   // Efeito com polling automático
   useEffect(() => {

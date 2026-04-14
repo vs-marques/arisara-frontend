@@ -196,9 +196,10 @@ export const API_ENDPOINTS = {
 
 // Headers padrão
 const TOKEN_KEYS = ['access_token', 'nyoka_token'];
-const COMPANY_STORAGE_KEY = 'nyoka_current_company';
+const WORKSPACE_STORAGE_KEY = 'nyoka_current_workspace';
+const LEGACY_COMPANY_STORAGE_KEY = 'nyoka_current_company';
 
-const getStoredToken = () => {
+export const getStoredToken = () => {
   for (const key of TOKEN_KEYS) {
     const value = localStorage.getItem(key);
     if (value) {
@@ -213,7 +214,8 @@ const getStoredToken = () => {
 };
 
 const getSelectedCompanyId = () => {
-  const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
+  const raw =
+    localStorage.getItem(WORKSPACE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_COMPANY_STORAGE_KEY);
   if (!raw) return null;
 
   try {
@@ -224,14 +226,69 @@ const getSelectedCompanyId = () => {
   }
 };
 
+const getTenantContext = () => {
+  const companyId = getSelectedCompanyId();
+  const userRaw = localStorage.getItem('nyoka_user');
+  let workspaceId: string | null = null;
+
+  if (userRaw) {
+    try {
+      const user = JSON.parse(userRaw);
+      workspaceId =
+        typeof user?.workspace_id === 'string' && user.workspace_id.trim()
+          ? user.workspace_id
+          : null;
+    } catch {
+      // ignora parse invalido
+    }
+  }
+
+  return {
+    companyId,
+    workspaceId,
+    tenantId: companyId ?? workspaceId ?? null,
+  };
+};
+
+export type AuthMeTenantPayload = {
+  company_id?: string | null;
+  workspace_id?: string | null;
+  tenant_id?: string | null;
+};
+
+export type WorkspacePickerRow = {
+  id: string;
+  workspace_id?: string | null;
+} | null;
+
+export function resolveWorkspaceIdForApi(
+  currentWorkspace: WorkspacePickerRow,
+  me: AuthMeTenantPayload,
+): string | null {
+  const w = currentWorkspace?.workspace_id?.trim();
+  if (w) return w;
+  const fromMe = me.workspace_id?.trim() || me.tenant_id?.trim();
+  return fromMe || null;
+}
+
+export function resolveCompanyIdForApi(
+  currentWorkspace: WorkspacePickerRow,
+  me: AuthMeTenantPayload,
+): string | null {
+  const c = currentWorkspace?.id?.trim();
+  if (c) return c;
+  return me.company_id?.trim() || null;
+}
+
 export const getAuthHeaders = (token?: string | null) => {
   const authToken = token || getStoredToken();
-  const companyId = getSelectedCompanyId();
+  const { companyId, workspaceId } = getTenantContext();
   
   return {
     'Content-Type': 'application/json',
     ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
-    ...(companyId && { 'X-Tenant-ID': companyId }),
+    'X-Tenant-ID': companyId ?? workspaceId ?? '',
+    ...(companyId ? { 'X-Company-ID': companyId } : {}),
   };
 };
 

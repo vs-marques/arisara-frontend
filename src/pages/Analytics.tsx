@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { MapPin, Globe, Activity, TrendingUp, BarChart3, Zap, TrendingDown } from 'lucide-react';
-import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import { API_ENDPOINTS, getAuthHeaders, resolveCompanyIdForApi } from '../config/api';
 import RealtimeMetrics from '../components/RealtimeMetrics';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 interface GeoPoint {
   latitude: number;
@@ -27,6 +28,7 @@ export default function Analytics() {
   useRequireAuth();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { currentWorkspace } = useWorkspace();
   const [geoPoints, setGeoPoints] = useState<GeoPoint[]>([]);
   const [countries, setCountries] = useState<CountryStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,14 +44,14 @@ export default function Analytics() {
         const res = await fetch(API_ENDPOINTS.auth.me, { headers });
         if (res.ok) {
           const data = await res.json();
-          setCompanyId(data.company_id);
+          setCompanyId(resolveCompanyIdForApi(currentWorkspace, data));
         }
       } catch (err) {
         console.error("analytics.user_data_error", { error: err instanceof Error ? err.message : String(err) });
       }
     };
     fetchUserData();
-  }, []);
+  }, [currentWorkspace]);
 
   useEffect(() => {
     if (activeTab === 'geo') {

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { PeriodProvider } from './contexts/PeriodContext';
 import { CompanyProvider } from './contexts/CompanyContext';
+import { WorkspaceProvider } from './contexts/WorkspaceContext';
 import { Toaster } from './components/ui/toaster';
 import Login from './pages/Login';
 import SignupIndividual from './pages/SignupIndividual';
@@ -20,7 +21,7 @@ import SaturnoMeetThanks from './pages/SaturnoMeetThanks';
 import { SaturnoRedirect } from './components/SaturnoRedirect';
 import AIConfig from './pages/AIConfig';
 import Settings from './pages/Settings';
-import Organizations from './pages/Organizations';
+import Workspaces from './pages/Workspaces';
 import Users from './pages/Users';
 import APIKeys from './pages/APIKeys';
 import { AIMaturity } from './pages/AIMaturity';
@@ -34,9 +35,10 @@ function App() {
   return (
     <AuthProvider>
       <CompanyProvider>
-        <PeriodProvider>
-          <Router>
-            <Routes>
+        <WorkspaceProvider>
+          <PeriodProvider>
+            <Router>
+              <Routes>
           {/* Redirect raiz para login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
@@ -109,13 +111,15 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/api-keys" element={<APIKeys />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/organizations" element={<Organizations />} />
+          <Route path="/organizations" element={<Workspaces />} />
+          <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/integrations/waba/callback" element={<WabaCallback />} />
           <Route path="/integrations/whatsapp/callback" element={<WabaCallback />} />
-            </Routes>
-          </Router>
-          <Toaster />
-        </PeriodProvider>
+              </Routes>
+            </Router>
+            <Toaster />
+          </PeriodProvider>
+        </WorkspaceProvider>
       </CompanyProvider>
     </AuthProvider>
   );

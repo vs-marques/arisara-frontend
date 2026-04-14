@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { useCompany } from '@/contexts/CompanyContext';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import FloatingLanguageSelector from '@/components/FloatingLanguageSelector';
 import { EmailIcon, LockIcon, UserIcon } from '@/components/ui/icons';
 import { Eye, EyeOff } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, verifyMfa } = useAuth();
-  const { refreshCompanies } = useCompany();
+  const { refreshWorkspaces } = useWorkspace();
   
   // Toggle entre Sign in e Sign up
   const [isSignUp, setIsSignUp] = useState(false);
@@ -107,16 +107,16 @@ export default function Login() {
       }
 
       if (result.success) {
-        const companies = await refreshCompanies();
+        const workspaces = await refreshWorkspaces();
         const isSuperadmin = Boolean(result.user?.is_superadmin);
-        const hasMultipleCompanies = companies.length > 1;
+        const hasMultipleWorkspaces = workspaces.length > 1;
 
-        if (!isSuperadmin && companies.length === 0) {
+        if (!isSuperadmin && workspaces.length === 0) {
           navigate('/dashboard');
           return;
         }
 
-        navigate(isSuperadmin || hasMultipleCompanies ? '/organizations' : '/dashboard');
+        navigate(isSuperadmin || hasMultipleWorkspaces ? '/workspaces' : '/dashboard');
       } else {
         setError(t('login.errors.invalidCredentials'));
       }
@@ -135,16 +135,16 @@ export default function Login() {
     try {
       const userData = await verifyMfa(pendingEmail || email, mfaCode.trim());
       if (userData) {
-        const companies = await refreshCompanies();
+        const workspaces = await refreshWorkspaces();
         const isSuperadmin = Boolean(userData.is_superadmin);
-        const hasMultipleCompanies = companies.length > 1;
+        const hasMultipleWorkspaces = workspaces.length > 1;
 
-        if (!isSuperadmin && companies.length === 0) {
+        if (!isSuperadmin && workspaces.length === 0) {
           navigate('/dashboard');
           return;
         }
 
-        navigate(isSuperadmin || hasMultipleCompanies ? '/organizations' : '/dashboard');
+        navigate(isSuperadmin || hasMultipleWorkspaces ? '/workspaces' : '/dashboard');
       } else {
         setError(t('login.errors.mfaInvalid'));
       }

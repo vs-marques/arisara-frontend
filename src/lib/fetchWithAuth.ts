@@ -32,10 +32,13 @@ const resolveInput = (input: RequestInfo): RequestInfo => {
  * ou no tokenOverride, se fornecido.
  */
 const TOKEN_KEY = 'access_token';
-const COMPANY_STORAGE_KEY = 'nyoka_current_company';
+const WORKSPACE_STORAGE_KEY = 'nyoka_current_workspace';
+const LEGACY_COMPANY_STORAGE_KEY = 'nyoka_current_company';
 
 const getSelectedCompanyId = (): string | null => {
-  const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
+  const raw =
+    localStorage.getItem(WORKSPACE_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_COMPANY_STORAGE_KEY);
   if (!raw) return null;
 
   try {

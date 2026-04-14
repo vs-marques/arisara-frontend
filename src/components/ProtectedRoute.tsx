@@ -10,7 +10,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCompany } from '@/contexts/CompanyContext';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { Loader2 } from 'lucide-react';
 import type { Role } from '@/types/User';
 
@@ -21,18 +21,18 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { currentCompany, isLoading: companyLoading, availableCompanies } = useCompany();
+  const { currentWorkspace, isLoading: workspaceLoading, availableWorkspaces } = useWorkspace();
 
   console.debug("protected_route.state", {
     isAuthenticated,
     isLoading,
     hasUser: !!user,
-    companyLoading,
-    companiesCount: availableCompanies.length,
-    hasCurrentCompany: !!currentCompany
+    workspaceLoading,
+    workspacesCount: availableWorkspaces.length,
+    hasCurrentWorkspace: !!currentWorkspace
   });
 
-  if (isLoading || companyLoading) {
+  if (isLoading || workspaceLoading) {
     console.debug("protected_route.loading");
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-all duration-500 ease-in-out">
@@ -69,13 +69,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     }
   }
 
-  // Verificar se usuário precisa de empresa selecionada
-  const rolesNeedingCompany = ['admin', 'provider', 'operador'];
-  if (user && rolesNeedingCompany.includes(user.role)) {
-    // Aguardar o CompanyContext terminar de processar todas as empresas
-    if (availableCompanies.length === 0) {
-      // Ainda não carregou as empresas - aguardar
-      console.debug("protected_route.waiting_companies");
+  // Verificar se usuário precisa de workspace/tenant selecionado
+  const rolesNeedingWorkspace = ['admin', 'provider', 'operador'];
+  if (user && rolesNeedingWorkspace.includes(user.role)) {
+    // Aguardar o WorkspaceContext terminar de carregar a lista
+    if (availableWorkspaces.length === 0) {
+      // Ainda não carregou os workspaces - aguardar
+      console.debug("protected_route.waiting_workspaces");
       return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-all duration-500 ease-in-out">
           {/* Gradiente do modo claro */}
@@ -91,13 +91,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
           
           <div className="relative z-10 flex flex-col items-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-            <p className="text-gray-600 dark:text-gray-300">Carregando empresas...</p>
+            <p className="text-gray-600 dark:text-gray-300">Carregando workspaces...</p>
           </div>
         </div>
       );
-    } else if (availableCompanies.length === 1 && !currentCompany) {
-      // Tem 1 empresa mas ainda não definiu automaticamente - aguardar
-      console.debug("protected_route.waiting_company_auto");
+    } else if (availableWorkspaces.length === 1 && !currentWorkspace) {
+      // Tem 1 workspace mas ainda não definiu automaticamente - aguardar
+      console.debug("protected_route.waiting_workspace_auto");
       return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-all duration-500 ease-in-out">
           {/* Gradiente do modo claro */}
@@ -113,20 +113,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
           
           <div className="relative z-10 flex flex-col items-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-            <p className="text-gray-600 dark:text-gray-300">Configurando empresa...</p>
+            <p className="text-gray-600 dark:text-gray-300">Configurando workspace...</p>
           </div>
         </div>
       );
-    } else if (availableCompanies.length > 1 && !currentCompany) {
-      // Tem múltiplas empresas - redirecionar para seleção
-      console.debug("protected_route.redirect_organizations_multiple");
-      return <Navigate to="/organizations" replace />;
-    } else if (availableCompanies.length === 0) {
-      // Nenhuma empresa disponível - redirecionar
-      console.debug("protected_route.redirect_organizations_none");
-      return <Navigate to="/organizations" replace />;
+    } else if (availableWorkspaces.length > 1 && !currentWorkspace) {
+      // Tem múltiplos workspaces - redirecionar para seleção
+      console.debug("protected_route.redirect_workspaces_multiple");
+      return <Navigate to="/workspaces" replace />;
+    } else if (availableWorkspaces.length === 0) {
+      // Nenhum workspace disponível - redirecionar
+      console.debug("protected_route.redirect_workspaces_none");
+      return <Navigate to="/workspaces" replace />;
     }
-    // Se chegou aqui, tem empresa selecionada ou é superadmin
+    // Se chegou aqui, tem workspace selecionado ou é superadmin
   }
 
   console.debug("protected_route.render_children");

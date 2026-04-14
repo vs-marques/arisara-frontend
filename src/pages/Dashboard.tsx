@@ -239,7 +239,7 @@ export default function Dashboard() {
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400/0 via-amber-400/20 to-amber-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 blur-sm" />
                 </button>
                 <button
-                  onClick={() => navigate('/organizations')}
+                  onClick={() => navigate('/workspaces')}
                   disabled={!user?.is_superadmin}
                   className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-gray-400 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 hover:border-[#EC4899]/60 hover:text-white disabled:hover:border-white/10 disabled:hover:text-gray-400"
                   title={user?.is_superadmin ? t('dashboard.actions.goToOrganizations') : t('dashboard.actions.organizationsTooltipDisabled')}

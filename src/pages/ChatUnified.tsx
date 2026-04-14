@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { useCompany } from "../contexts/CompanyContext";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useIsMobile } from "../hooks/use-mobile";
 import { useWebSocket } from "../hooks/useWebSocket";
@@ -272,7 +272,7 @@ export default function ChatUnified() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  const { currentCompany, availableCompanies } = useCompany();
+  const { currentWorkspace, availableWorkspaces } = useWorkspace();
 
   // Estados do Chat
   const [messages, setMessages] = useState<Message[]>([]);
@@ -319,10 +319,10 @@ export default function ChatUnified() {
   const [showImportContactsModal, setShowImportContactsModal] = useState(false);
 
   useEffect(() => {
-    if (availableCompanies.length > 1 && !currentCompany) {
-      navigate("/organizations", { replace: true });
+    if (availableWorkspaces.length > 1 && !currentWorkspace) {
+      navigate("/workspaces", { replace: true });
     }
-  }, [availableCompanies.length, currentCompany, navigate]);
+  }, [availableWorkspaces.length, currentWorkspace, navigate]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioBlobsRef = useRef<Record<string, Blob>>({});
@@ -450,7 +450,7 @@ export default function ChatUnified() {
       }
 
       const userData = await meRes.json();
-      const userCompanyId = currentCompany?.id ?? userData.company_id;
+      const userCompanyId = currentWorkspace?.id ?? userData.company_id;
       const userId = userData.user_id || userData.id; // Backend retorna 'user_id', mas mantém fallback para 'id'
 
       if (!userCompanyId) {
@@ -486,7 +486,7 @@ export default function ChatUnified() {
         setSessionsLoading(false);
       }
     }
-  }, [currentCompany?.id, t]);
+  }, [currentWorkspace?.id, t]);
 
   // Carregar mensagens de uma sessão existente
   // DEVE ser definido antes dos useEffect que o usam
@@ -1132,7 +1132,7 @@ export default function ChatUnified() {
       }
 
       const userData = await meRes.json();
-      const companyId = currentCompany?.id ?? userData.company_id;
+      const companyId = currentWorkspace?.id ?? userData.company_id;
 
       if (!companyId) {
         throw new Error(
@@ -1221,7 +1221,7 @@ export default function ChatUnified() {
       const meRes = await fetch(API_ENDPOINTS.auth.me, { headers });
       if (!meRes.ok) throw new Error(t("chat.errors.sessionExpiredShort"));
       const userData = await meRes.json();
-      companyId = currentCompany?.id ?? userData.company_id;
+      companyId = currentWorkspace?.id ?? userData.company_id;
       if (!companyId) throw new Error(t("chat.errors.noCompanySupport"));
     } catch (err: any) {
       setError(err.message || t("chat.errors.errorLoadSessions"));

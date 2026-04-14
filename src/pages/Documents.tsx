@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "../components/Layout";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import { API_ENDPOINTS, getAuthHeaders, API_BASE_URL } from "../config/api";
+import { API_ENDPOINTS, getAuthHeaders, API_BASE_URL, resolveWorkspaceIdForApi } from "../config/api";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ interface Document {
 export default function Documents() {
   useRequireAuth();
   const { t } = useTranslation();
+  const { currentWorkspace } = useWorkspace();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function Documents() {
   // Buscar documentos ao carregar
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [currentWorkspace]);
 
   const fetchDocuments = async () => {
     try {
@@ -76,7 +78,7 @@ export default function Documents() {
       if (!meRes.ok) return;
 
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveWorkspaceIdForApi(currentWorkspace, userData);
 
       if (!companyId) return;
 
@@ -159,7 +161,7 @@ export default function Documents() {
       }
       
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveWorkspaceIdForApi(currentWorkspace, userData);
       
       const res = await fetch(
         `${API_BASE_URL}/documents/${documentId}/view?company_id=${companyId}`,
@@ -193,7 +195,7 @@ export default function Documents() {
       }
 
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveWorkspaceIdForApi(currentWorkspace, userData);
       const userId = userData.user_id;
 
       if (!companyId || !userId) {
@@ -358,7 +360,7 @@ export default function Documents() {
       }
 
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveWorkspaceIdForApi(currentWorkspace, userData);
 
       if (!companyId) {
         setError(t("documents.errors.noCompany"));
@@ -415,7 +417,7 @@ export default function Documents() {
       }
 
       const userData = await meRes.json();
-      const companyId = userData.company_id;
+      const companyId = resolveWorkspaceIdForApi(currentWorkspace, userData);
 
       if (!companyId) {
         setError(t("documents.errors.noCompany"));
