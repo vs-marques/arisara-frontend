@@ -56,11 +56,16 @@ export interface InvitationResponse {
 
 export const getAdminUsers = async (options?: {
   companyId?: string | null;
+  /** Superadmin: filtra por core.workspaces.id (tenant PF no lobby). */
+  workspaceId?: string | null;
   includeCompany?: boolean;
 }): Promise<AdminUserResponse[]> => {
   const url = new URL(`${BACKEND_URL}/admin/users`);
   if (options?.companyId) {
     url.searchParams.append('company_id', options.companyId);
+  }
+  if (options?.workspaceId) {
+    url.searchParams.append('workspace_id', options.workspaceId);
   }
   if (options?.includeCompany) {
     url.searchParams.append('include_company', 'true');

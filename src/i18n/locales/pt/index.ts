@@ -18,6 +18,7 @@ import saturnoPrejoin from './saturno-prejoin';
 import saturnoLive from './saturno-live';
 import saturnoMeetThanks from './saturno-meet-thanks';
 import leads from './leads';
+import workspaces from './workspaces';
 
 export default {
   settings,
@@ -34,6 +35,7 @@ export default {
   channels,
   discovery,
   users,
+  workspaces,
   agenda,
   saturno: {
     ...saturno,
