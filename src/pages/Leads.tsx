@@ -31,6 +31,7 @@ import {
   Phone,
   LayoutGrid,
   List,
+  Download,
 } from 'lucide-react';
 import { Skeleton } from '../components/ui/skeleton';
 import { toast } from 'sonner';
@@ -225,13 +226,26 @@ export default function Leads() {
   const [leadsLoading, setLeadsLoading] = useState(true);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const fetchLeads = useCallback(async () => {
     setLeadsLoading(true);
     try {
       const url = API_ENDPOINTS.crm.leads(search || undefined, statusFilter || undefined);
       const res = await fetch(url, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error('leads');
+      if (!res.ok) {
+        let msg = t('leads.loadError');
+        try {
+          const errBody = (await res.json()) as { detail?: string | string[] };
+          const d = errBody?.detail;
+          if (typeof d === 'string' && d.trim()) msg = d;
+          else if (Array.isArray(d) && d[0]) msg = String(d[0]);
+        } catch {
+          /* ignore */
+        }
+        toast.error(msg);
+        throw new Error(msg);
+      }
       const data = (await res.json()) as Lead[];
       setLeads(data);
     } catch {
@@ -239,7 +253,33 @@ export default function Leads() {
     } finally {
       setLeadsLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, t]);
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const url = API_ENDPOINTS.crm.leadsExport(search || undefined, statusFilter || undefined);
+      const res = await fetch(url, { headers: getAuthHeaders() });
+      if (!res.ok) {
+        toast.error(t('leads.exportError'));
+        return;
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      const date = new Date().toISOString().slice(0, 10);
+      a.download = `leads_${date}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast.error(t('leads.exportErrorGeneric'));
+    } finally {
+      setExporting(false);
+    }
+  }, [search, statusFilter, t]);
 
   useEffect(() => {
     fetchLeads();
@@ -339,6 +379,16 @@ export default function Leads() {
               ))}
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-white disabled:opacity-50"
+            title={t('leads.exportTitle')}
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? t('leads.exportExporting') : t('leads.exportXlsx')}
+          </button>
           <div className="flex rounded-xl border border-white/10 bg-black/40 p-1">
             <button
               type="button"

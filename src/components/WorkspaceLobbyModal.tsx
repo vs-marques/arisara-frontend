@@ -60,6 +60,58 @@ import {
 const discoverySelectClassName =
   "w-full rounded-xl border border-white/10 bg-black/40 px-3 pr-10 py-2 text-sm text-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_0.75rem_center] bg-no-repeat";
 
+type WorkspaceUsageSummaryApi = {
+  workspace_id: string;
+  occurred_after: string;
+  occurred_before: string;
+  total_events: number;
+  total_cost_usd: string;
+  presentation_currency: 'USD' | 'BRL';
+  total_cost_brl?: string | null;
+  fx_missing_trade_dates?: string[] | null;
+  by_event_type: Array<{
+    event_type: string;
+    event_count: number;
+    sum_cost_usd: string;
+    sum_tokens: number;
+    sum_cost_brl?: string | null;
+  }>;
+};
+
+function usageMonthUtcRange(): { from: string; to: string } {
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const d = now.getUTCDate();
+  const from = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const to = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  return { from, to };
+}
+
+/** Régua mensal BRL (tabela standard) — PKG_DSV_V1_00088; uso offline se GET /by-tier falhar. */
+const PLAN_MONTHLY_FALLBACK_BRL: Record<string, number> = {
+  starter: 490,
+  basic: 690,
+  growth: 990,
+  pro: 1590,
+  business: 2790,
+  scale: 4490,
+  enterprise: 7990,
+};
+
+function normalizePlanSlugForCatalog(raw: string): string {
+  let s = raw.trim().toLowerCase();
+  if (!s || s === 'unknown' || s === 'free') return '';
+  if (s.startsWith('plan ')) s = s.slice(5).trim();
+  return s;
+}
+
+function formatTierDisplayName(slug: string): string {
+  if (!slug) return '';
+  if (slug === 'pro') return 'Pro';
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
 export type SignupReviewDetail = {
   workspace_id: string;
   workspace_name: string;
@@ -144,7 +196,7 @@ export function WorkspaceLobbyModal({
   onClose,
   onRefreshWorkspaces,
 }: WorkspaceLobbyModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [tab, setTab] = useState('account');
 
@@ -163,9 +215,28 @@ export function WorkspaceLobbyModal({
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
+  const [usageSummary, setUsageSummary] = useState<WorkspaceUsageSummaryApi | null>(null);
+  const [usageQueryRange, setUsageQueryRange] = useState<{ from: string; to: string } | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
+
+  const [planCatalog, setPlanCatalog] = useState<{
+    display_name: string;
+    price_monthly: string;
+    billing_cycle: string;
+  } | null>(null);
+  const [planCatalogLoading, setPlanCatalogLoading] = useState(false);
+
   useEffect(() => {
     if (open) setTab('account');
   }, [open]);
+
+  useEffect(() => {
+    setUsageSummary(null);
+    setUsageQueryRange(null);
+    setUsageError(null);
+    setPlanCatalog(null);
+  }, [row?.id]);
 
   const isOrg = Boolean(
     row?.tenant_kind === 'organization' || row?.workspace_type === 'organization',
@@ -210,6 +281,140 @@ export function WorkspaceLobbyModal({
       void loadUsersTab();
     }
   }, [open, tab, row, canManageSignupReview, loadUsersTab]);
+
+  const loadUsageSummary = useCallback(async () => {
+    if (!row) return;
+    const wid = workspaceCoreId(row);
+    setUsageLoading(true);
+    setUsageError(null);
+    const range = usageMonthUtcRange();
+    const currency =
+      i18n.language?.startsWith('pt') || i18n.language?.startsWith('es') ? 'brl' : 'usd';
+    try {
+      const params = new URLSearchParams({
+        from: range.from,
+        to: range.to,
+        currency,
+      });
+      const data = await fetchWithAuthJson<WorkspaceUsageSummaryApi>(
+        `/auth/admin/workspaces/${wid}/usage/summary?${params.toString()}`,
+      );
+      setUsageQueryRange(range);
+      setUsageSummary(data);
+    } catch (e: unknown) {
+      setUsageSummary(null);
+      setUsageQueryRange(null);
+      const msg =
+        e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : '…';
+      setUsageError(msg);
+    } finally {
+      setUsageLoading(false);
+    }
+  }, [row, i18n.language]);
+
+  useEffect(() => {
+    if (!open || tab !== 'consumption' || !row) return;
+    void loadUsageSummary();
+  }, [open, tab, row?.id, loadUsageSummary]);
+
+  const loadPlanCatalog = useCallback(async () => {
+    if (!row?.plan?.trim()) {
+      setPlanCatalog(null);
+      return;
+    }
+    const slug = row.plan.trim();
+    setPlanCatalogLoading(true);
+    try {
+      const data = await fetchWithAuthJson<{
+        display_name: string;
+        price_monthly: string;
+        billing_cycle: string;
+      }>(`/auth/admin/subscription-plans/by-tier/${encodeURIComponent(slug)}`);
+      setPlanCatalog({
+        display_name: data.display_name,
+        price_monthly: data.price_monthly,
+        billing_cycle: data.billing_cycle,
+      });
+    } catch {
+      setPlanCatalog(null);
+    } finally {
+      setPlanCatalogLoading(false);
+    }
+  }, [row?.plan]);
+
+  useEffect(() => {
+    if (!open || tab !== 'consumption' || !row?.plan?.trim()) {
+      return;
+    }
+    void loadPlanCatalog();
+  }, [open, tab, row?.plan, loadPlanCatalog]);
+
+  const usageTotalTokens = useMemo(() => {
+    if (!usageSummary?.by_event_type?.length) return 0;
+    return usageSummary.by_event_type.reduce((acc, x) => acc + (x.sum_tokens || 0), 0);
+  }, [usageSummary]);
+
+  const usageCostDisplay = useMemo(() => {
+    if (!usageSummary) return null;
+    if (
+      usageSummary.presentation_currency === 'BRL' &&
+      usageSummary.total_cost_brl != null &&
+      usageSummary.total_cost_brl !== ''
+    ) {
+      const n = parseFloat(usageSummary.total_cost_brl);
+      if (!Number.isNaN(n)) {
+        return new Intl.NumberFormat(i18n.language || 'pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(n);
+      }
+    }
+    const u = parseFloat(usageSummary.total_cost_usd);
+    if (Number.isNaN(u)) return null;
+    return new Intl.NumberFormat(i18n.language || 'en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(u);
+  }, [usageSummary, i18n.language]);
+
+  const planPaymentsLabel = useMemo(() => {
+    const p = row?.plan;
+    if (!p?.trim()) return null;
+    const normalized = p.trim().toLowerCase();
+    const formattedPlan = `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
+    return t('workspaces.planLabel', { plan: formattedPlan });
+  }, [row?.plan, t]);
+
+  const planMonthlyPriceFormatted = useMemo(() => {
+    if (!planCatalog?.price_monthly) return null;
+    const n = parseFloat(planCatalog.price_monthly);
+    if (Number.isNaN(n)) return null;
+    return new Intl.NumberFormat(i18n.language || 'pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(n);
+  }, [planCatalog, i18n.language]);
+
+  const planFallbackBrlAmount = useMemo(() => {
+    const k = normalizePlanSlugForCatalog(row?.plan ?? '');
+    if (!k) return null;
+    const v = PLAN_MONTHLY_FALLBACK_BRL[k];
+    return typeof v === 'number' ? v : null;
+  }, [row?.plan]);
+
+  const planFallbackPriceFormatted = useMemo(() => {
+    if (planFallbackBrlAmount == null) return null;
+    return new Intl.NumberFormat(i18n.language || 'pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(planFallbackBrlAmount);
+  }, [planFallbackBrlAmount, i18n.language]);
+
+  const planFallbackDisplayName = useMemo(() => {
+    const k = normalizePlanSlugForCatalog(row?.plan ?? '');
+    if (!k) return '';
+    return formatTierDisplayName(k);
+  }, [row?.plan]);
 
   const formatDateTime = (value?: string | null) => {
     if (!value) return t('workspaces.neverDate');
@@ -667,23 +872,92 @@ export function WorkspaceLobbyModal({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
                 <p className="text-xs uppercase tracking-widest text-gray-500">
-                  {t('workspaces.consumptionConversations')}
+                  {t('workspaces.consumptionUsageRecords')}
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-white">—</p>
-                <p className="mt-1 text-xs text-gray-500">{t('workspaces.mockPeriod')}</p>
+                {usageLoading ? (
+                  <Loader2 className="mt-3 h-8 w-8 animate-spin text-gray-500" aria-hidden />
+                ) : usageError ? (
+                  <p className="mt-2 text-sm text-amber-300/90">{t('workspaces.usageLoadError')}</p>
+                ) : (
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {usageSummary != null ? usageSummary.total_events.toLocaleString() : '—'}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  {usageQueryRange && usageSummary && !usageLoading && !usageError
+                    ? t('workspaces.usageStatsPeriodFooter', {
+                        start: usageQueryRange.from,
+                        end: usageQueryRange.to,
+                      })
+                    : t('workspaces.mockPeriod')}
+                </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
                 <p className="text-xs uppercase tracking-widest text-gray-500">
                   {t('workspaces.consumptionTokens')}
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-white">—</p>
-                <p className="mt-1 text-xs text-gray-500">{t('workspaces.mockCosts')}</p>
+                {usageLoading ? (
+                  <Loader2 className="mt-3 h-8 w-8 animate-spin text-gray-500" aria-hidden />
+                ) : usageError ? (
+                  <p className="mt-2 text-sm text-amber-300/90">{t('workspaces.usageLoadError')}</p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-2xl font-semibold text-white">
+                      {usageSummary != null ? usageTotalTokens.toLocaleString() : '—'}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-400">
+                      {usageCostDisplay != null
+                        ? t('workspaces.usageCostInPeriod', { amount: usageCostDisplay })
+                        : '—'}
+                    </p>
+                  </>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  {usageQueryRange && usageSummary && !usageLoading && !usageError
+                    ? t('workspaces.usageStatsPeriodFooter', {
+                        start: usageQueryRange.from,
+                        end: usageQueryRange.to,
+                      })
+                    : t('workspaces.mockCosts')}
+                </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 sm:col-span-2">
                 <p className="text-xs uppercase tracking-widest text-gray-500">
                   {t('workspaces.consumptionPayments')}
                 </p>
-                <p className="mt-2 text-sm text-gray-400">{t('workspaces.mockPaymentsEmpty')}</p>
+                {planCatalogLoading ? (
+                  <Loader2 className="mt-3 h-6 w-6 animate-spin text-gray-500" aria-hidden />
+                ) : planCatalog && planMonthlyPriceFormatted ? (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium text-white">
+                      {t('workspaces.planWithMonthlyPrice', {
+                        name: planCatalog.display_name,
+                        price: planMonthlyPriceFormatted,
+                      })}
+                    </p>
+                    <p className="text-xs text-gray-500">{t('workspaces.paymentsHistoryPending')}</p>
+                  </div>
+                ) : !planCatalogLoading &&
+                  planFallbackBrlAmount != null &&
+                  planFallbackPriceFormatted &&
+                  planFallbackDisplayName ? (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium text-white">
+                      {t('workspaces.planWithMonthlyPrice', {
+                        name: planFallbackDisplayName,
+                        price: planFallbackPriceFormatted,
+                      })}
+                    </p>
+                    <p className="text-xs text-gray-500">{t('workspaces.paymentsHistoryPending')}</p>
+                  </div>
+                ) : planPaymentsLabel ? (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium text-white">{planPaymentsLabel}</p>
+                    <p className="text-xs text-gray-500">{t('workspaces.paymentsHistoryPending')}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-gray-400">{t('workspaces.paymentsPlanUnknown')}</p>
+                )}
               </div>
             </div>
           </TabsContent>

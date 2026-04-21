@@ -24,6 +24,7 @@ export default {
   noAccessMessage: 'Este usuário ainda não possui acesso a nenhuma empresa. Entre em contato com um administrador.',
   domainUnavailable: 'domínio não informado',
   planLabel: 'Plano {{plan}}',
+  planWithMonthlyPrice: '{{name}} — {{price}} / mês',
   typeIndividual: 'Individual',
   typeOrganization: 'Empresas',
   typeUnknown: 'Não informado',
@@ -75,11 +76,18 @@ export default {
   consumptionIntro:
     'Resumo financeiro e de uso (conversas, tokens, faturamento). Dados reais serão integrados ao schema de assinaturas / finanças.',
   consumptionConversations: 'Conversas (período)',
+  consumptionUsageRecords: 'Registros de uso (período)',
   consumptionTokens: 'Tokens / custos operacionais',
   consumptionPayments: 'Adimplência / histórico de pagamentos',
+  usageStatsPeriodFooter: '{{start}} – {{end}} (UTC)',
+  usageLoadError: 'Não foi possível carregar o consumo.',
+  usageCostInPeriod: 'Custo estimado no período: {{amount}}',
   mockPeriod: 'Período configurável — em breve',
   mockCosts: 'Estimativa de custo — em breve',
   mockPaymentsEmpty: 'Nenhum lançamento sincronizado (mock).',
+  paymentsPlanUnknown: 'Plano atual não informado no cadastro.',
+  paymentsHistoryPending:
+    'Nenhum pagamento sincronizado ainda. O histórico de faturamento aparecerá após integração com finanças.',
   dangerTitle: 'Zona crítica',
   dangerSubtitle: 'Ações irreversíveis ou que interrompem o acesso ao tenant. Use com cautela.',
   deleteCardBody:

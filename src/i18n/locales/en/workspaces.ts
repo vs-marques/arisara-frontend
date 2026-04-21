@@ -24,6 +24,7 @@ export default {
   noAccessMessage: 'This user does not have access to any company yet. Contact an administrator.',
   domainUnavailable: 'domain not informed',
   planLabel: 'Plan {{plan}}',
+  planWithMonthlyPrice: '{{name}} — {{price}} / mo',
   typeIndividual: 'Individual',
   typeOrganization: 'Companies',
   typeUnknown: 'Not informed',
@@ -75,11 +76,18 @@ export default {
   consumptionIntro:
     'Financial and usage summary (conversations, tokens, billing). Real data will plug into subscriptions / finance schema.',
   consumptionConversations: 'Conversations (period)',
+  consumptionUsageRecords: 'Usage records (period)',
   consumptionTokens: 'Tokens / operating cost',
   consumptionPayments: 'Payments / history',
+  usageStatsPeriodFooter: '{{start}} – {{end}} (UTC)',
+  usageLoadError: 'Could not load usage data.',
+  usageCostInPeriod: 'Estimated cost in period: {{amount}}',
   mockPeriod: 'Configurable period — coming soon',
   mockCosts: 'Cost estimate — coming soon',
   mockPaymentsEmpty: 'No synced entries (mock).',
+  paymentsPlanUnknown: 'Current plan not set in records.',
+  paymentsHistoryPending:
+    'No payments synced yet. Billing history will appear after finance integration.',
   dangerTitle: 'Danger zone',
   dangerSubtitle: 'Irreversible or access-blocking actions. Proceed with care.',
   deleteCardBody:

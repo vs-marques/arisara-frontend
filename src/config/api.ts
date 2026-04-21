@@ -81,6 +81,13 @@ export const API_ENDPOINTS = {
       const q = params.toString();
       return `${API_BASE_URL}/api/v1/crm/leads${q ? `?${q}` : ''}`;
     },
+    leadsExport: (search?: string, status?: string) => {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (status) params.append('status', status);
+      const q = params.toString();
+      return `${API_BASE_URL}/api/v1/crm/leads/export${q ? `?${q}` : ''}`;
+    },
     leadUpdate: (leadId: string) => `${API_BASE_URL}/api/v1/crm/leads/${leadId}`,
   },
 

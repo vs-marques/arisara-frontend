@@ -27,6 +27,12 @@ export default {
   footer:
     'ลูกค้าจากแชทและการเชื่อมต่อ ลากในคัมบังเพื่อเปลี่ยนขั้นตอน',
   openChat: 'ดูการสนทนา',
+  exportXlsx: 'ส่งออก XLSX',
+  exportExporting: 'กำลังส่งออก…',
+  exportTitle: 'ส่งออกลูกค้าเป็น Excel (ตามการค้นหาและตัวกรองปัจจุบัน)',
+  exportError: 'ไม่สามารถส่งออกรายการได้',
+  exportErrorGeneric: 'เกิดข้อผิดพลาดขณะส่งออก',
+  loadError: 'ไม่สามารถโหลดรายการได้',
   yesterday: 'เมื่อวาน',
   daysAgoShort: '{{count}} วันที่แล้ว',
   daysAgo: '{{count}} วันที่แล้ว',

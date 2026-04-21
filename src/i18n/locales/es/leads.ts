@@ -27,6 +27,12 @@ export default {
   footer:
     'Leads de la empresa desde chat e integraciones. Arrastra en el Kanban para cambiar etapa.',
   openChat: 'Ver conversación',
+  exportXlsx: 'Exportar XLSX',
+  exportExporting: 'Exportando…',
+  exportTitle: 'Exportar leads a Excel (respeta búsqueda y filtro)',
+  exportError: 'No se pudieron exportar los leads.',
+  exportErrorGeneric: 'Error al exportar leads.',
+  loadError: 'No se pudieron cargar los leads.',
   yesterday: 'Ayer',
   daysAgoShort: 'hace {{count}}d',
   daysAgo: 'hace {{count}} días',
