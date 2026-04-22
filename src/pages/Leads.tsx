@@ -3,7 +3,8 @@
  * Ref.: FEATURES_E_MELHORIAS.md §3.6 CRM-lite, §4.1 Pipeline.
  * Dados do backend GET /api/v1/crm/leads; PATCH /api/v1/crm/leads/:id no drag.
  */
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import {
@@ -176,9 +177,9 @@ function KanbanColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-2xl border border-white/10 bg-white/5">
+    <div className="flex h-full min-h-0 w-72 shrink-0 flex-col rounded-2xl border border-white/10 bg-white/5">
       <div
-        className={`flex items-center justify-between rounded-t-2xl border-b border-white/10 px-4 py-3 ${statusColors[stage]}`}
+        className={`flex shrink-0 items-center justify-between rounded-t-2xl border-b border-white/10 px-4 py-3 ${statusColors[stage]}`}
       >
         <span className="font-semibold">{statusLabels[stage]}</span>
         <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
@@ -187,7 +188,7 @@ function KanbanColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex min-h-[200px] flex-1 flex-col gap-3 overflow-y-auto p-3 transition-colors ${isOver ? 'bg-[#EC4899]/10 ring-1 ring-[#EC4899]/40' : ''}`}
+        className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-y-contain p-3 transition-colors ${isOver ? 'bg-[#EC4899]/10 ring-1 ring-[#EC4899]/40' : ''}`}
       >
         {children}
       </div>
@@ -227,6 +228,28 @@ export default function Leads() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [wsTenantId, setWsTenantId] = useState<string | null>(null);
+  const fetchLeadsRef = useRef<() => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = getAuthHeaders();
+        const meRes = await fetch(API_ENDPOINTS.auth.me, { headers });
+        if (!meRes.ok || cancelled) return;
+        const userData = await meRes.json();
+        const wid =
+          userData.workspace_id ?? userData.tenant_id ?? userData.company_id ?? null;
+        if (wid && !cancelled) setWsTenantId(String(wid));
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchLeads = useCallback(async () => {
     setLeadsLoading(true);
@@ -280,6 +303,30 @@ export default function Leads() {
       setExporting(false);
     }
   }, [search, statusFilter, t]);
+
+  fetchLeadsRef.current = fetchLeads;
+
+  const handleLeadWsUpdate = useCallback((data: { lead_id?: string; status?: string }) => {
+    const lid = data?.lead_id;
+    const st = data?.status;
+    if (!lid || !st || !isLeadStatus(st)) return;
+    setLeads((prev) => {
+      const hit = prev.some((l) => l.id === lid);
+      if (!hit) {
+        void fetchLeadsRef.current();
+        return prev;
+      }
+      return prev.map((l) => (l.id === lid ? { ...l, status: st } : l));
+    });
+    setSelectedLead((sel) =>
+      sel && sel.id === lid ? { ...sel, status: st as LeadStatus } : sel
+    );
+  }, []);
+
+  useWebSocket({
+    companyId: wsTenantId || '',
+    onLeadUpdated: handleLeadWsUpdate,
+  });
 
   useEffect(() => {
     fetchLeads();
@@ -343,15 +390,22 @@ export default function Leads() {
 
   const openChatLabel = t('leads.openChat');
 
+  const kanbanViewport =
+    viewMode === 'kanban'
+      ? 'flex h-[calc(100dvh-10rem)] max-h-[calc(100dvh-10rem)] flex-col gap-8 min-h-0 lg:h-[calc(100dvh-11rem)] lg:max-h-[calc(100dvh-11rem)]'
+      : 'space-y-8';
+
   return (
     <Layout>
-      <div className="space-y-8">
-        <div>
+      <div className={kanbanViewport}>
+        <div className={viewMode === 'kanban' ? 'shrink-0' : ''}>
           <h1 className="text-3xl font-semibold text-white">{t('leads.title')}</h1>
           <p className="mt-1 text-gray-400">{t('leads.subtitle')}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div
+          className={`flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 ${viewMode === 'kanban' ? 'shrink-0' : ''}`}
+        >
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <input
@@ -420,7 +474,9 @@ export default function Leads() {
         </div>
 
         {leadsLoading && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+          <div
+            className={`rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4 ${viewMode === 'kanban' ? 'shrink-0' : ''}`}
+          >
             <Skeleton className="h-5 w-32 bg-white/10" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -431,13 +487,14 @@ export default function Leads() {
         )}
 
         {!leadsLoading && viewMode === 'kanban' && (
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveDragId(null)}
-          >
-            <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={() => setActiveDragId(null)}
+            >
+              <div className="flex h-full min-h-0 min-w-0 flex-1 items-stretch gap-4 overflow-x-auto pb-2">
               {STAGES_ORDER.map((stage) => {
                 const stageLeads = filtered.filter((l) => l.status === stage);
                 return (
@@ -478,7 +535,8 @@ export default function Leads() {
                   );
                 })()}
             </DragOverlay>
-          </DndContext>
+            </DndContext>
+          </div>
         )}
 
         {!leadsLoading && viewMode === 'lista' && (

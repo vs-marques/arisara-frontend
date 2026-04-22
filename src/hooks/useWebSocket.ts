@@ -9,6 +9,7 @@
  * - new_conversation: Nova conversa iniciada
  * - new_message: Nova mensagem recebida
  * - status_update: Status da conversa mudou
+ * - lead_updated: estágio do lead no CRM (Kanban)
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
@@ -24,6 +25,7 @@ export interface UseWebSocketOptions {
   onNewConversation?: (data: any) => void;
   onNewMessage?: (data: any) => void;
   onStatusUpdate?: (data: any) => void;
+  onLeadUpdated?: (data: any) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
   autoReconnect?: boolean;
@@ -35,6 +37,7 @@ export const useWebSocket = ({
   onNewConversation,
   onNewMessage,
   onStatusUpdate,
+  onLeadUpdated,
   onConnected,
   onDisconnected,
   autoReconnect = true,
@@ -50,6 +53,7 @@ export const useWebSocket = ({
     onNewConversation,
     onNewMessage,
     onStatusUpdate,
+    onLeadUpdated,
     onConnected,
     onDisconnected
   });
@@ -60,10 +64,11 @@ export const useWebSocket = ({
       onNewConversation,
       onNewMessage,
       onStatusUpdate,
+      onLeadUpdated,
       onConnected,
       onDisconnected
     };
-  }, [onNewConversation, onNewMessage, onStatusUpdate, onConnected, onDisconnected]);
+  }, [onNewConversation, onNewMessage, onStatusUpdate, onLeadUpdated, onConnected, onDisconnected]);
 
   const connect = useCallback(() => {
     // ✅ CRÍTICO: Não conectar se não tiver company_id
@@ -141,6 +146,10 @@ export const useWebSocket = ({
             
             case 'status_update':
               callbacksRef.current.onStatusUpdate?.(message.data);
+              break;
+
+            case 'lead_updated':
+              callbacksRef.current.onLeadUpdated?.(message.data);
               break;
             
             case 'pong':
