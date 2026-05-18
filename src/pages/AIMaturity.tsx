@@ -467,6 +467,8 @@ export function AIMaturity() {
             <PeriodFilter
               value={period}
               onChange={setPeriod}
+              startDate={getStartDate()}
+              endDate={getEndDate()}
               buttonClassName="border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white hover:from-pink-500/30 hover:to-purple-500/30 hover:text-white"
             />
             <button

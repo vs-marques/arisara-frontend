@@ -8,6 +8,7 @@ export default {
   leads: 'Leads',
   agenda: 'Agenda',
   documents: 'Documents',
+  properties: 'Properties',
   aiConfig: 'AI Configuration',
   channels: 'Channels',
   discovery: 'Discovery',

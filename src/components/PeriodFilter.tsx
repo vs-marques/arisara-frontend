@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  formatDateISO,
+  formatPeriodRangeLabel,
+  lastNDaysRange,
+  startOfDay,
+  endOfDay,
+} from '@/lib/periodUtils';
 
 export type PeriodPreset = '30m' | '1h' | '12h' | '1d' | '7d' | '30d';
 
@@ -10,231 +17,168 @@ export interface CustomPeriod {
   endDate: Date;
 }
 
-export type PeriodType = {
-  type: 'preset';
-  preset: PeriodPreset;
-} | {
-  type: 'custom';
-  custom: CustomPeriod;
-};
+export type PeriodType =
+  | { type: 'preset'; preset: PeriodPreset }
+  | { type: 'custom'; custom: CustomPeriod };
 
 interface PeriodFilterProps {
   value: PeriodType;
   onChange: (period: PeriodType) => void;
+  startDate: Date;
+  endDate: Date;
   className?: string;
   buttonClassName?: string;
 }
 
-const PERIOD_KEYS: Record<PeriodPreset, string> = {
-  '30m': 'common.periodFilter.period30m',
-  '1h': 'common.periodFilter.period1h',
-  '12h': 'common.periodFilter.period12h',
-  '1d': 'common.periodFilter.period1d',
-  '7d': 'common.periodFilter.period7d',
-  '30d': 'common.periodFilter.period30d',
-};
+const QUICK_RANGES = [
+  { days: 7, labelKey: 'dashboard.period.last7Days' as const },
+  { days: 30, labelKey: 'dashboard.period.last30Days' as const },
+];
 
-export default function PeriodFilter({ value, onChange, className, buttonClassName }: PeriodFilterProps) {
+const BUTTON_SURFACE =
+  'rounded-xl border border-white/10 bg-white/[0.03] shadow-[0_24px_60px_-55px_rgba(0,0,0,0.55)]';
+
+/** Fundo opaco no popover para não vazar o conteúdo do dashboard por baixo. */
+const POPOVER_SURFACE =
+  'rounded-xl border border-white/10 bg-[#0c0c0c] shadow-[0_24px_60px_-55px_rgba(0,0,0,0.55)]';
+
+export default function PeriodFilter({
+  value: _value,
+  onChange,
+  startDate,
+  endDate,
+  className,
+  buttonClassName,
+}: PeriodFilterProps) {
   const { t, i18n } = useTranslation();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [customStart, setCustomStart] = useState(() => formatDateISO(startDate));
+  const [customEnd, setCustomEnd] = useState(() => formatDateISO(endDate));
+  const ref = useRef<HTMLDivElement>(null);
 
-  const locale = i18n.language === 'th' ? 'th-TH' : i18n.language === 'pt' ? 'pt-BR' : i18n.language === 'es' ? 'es' : 'en';
-
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handlePresetSelect = (preset: PeriodPreset) => {
-    onChange({ type: 'preset', preset });
-    setShowDropdown(false);
-    setShowCustomPicker(false);
+  useEffect(() => {
+    setCustomStart(formatDateISO(startDate));
+    setCustomEnd(formatDateISO(endDate));
+  }, [startDate, endDate]);
+
+  const rangeLabel = formatPeriodRangeLabel(startDate, endDate, i18n.language);
+
+  const applyQuickRange = (days: number) => {
+    const { startDate: s, endDate: e } = lastNDaysRange(days);
+    onChange({ type: 'custom', custom: { startDate: s, endDate: e } });
+    setOpen(false);
   };
 
-  const handleCustomApply = () => {
+  const applyCustom = () => {
     if (!customStart || !customEnd) return;
-    
-    const startDate = new Date(customStart);
-    const endDate = new Date(customEnd);
-    
-    // Validações
-    if (startDate > endDate) {
-      alert(t('common.periodFilter.startBeforeEnd'));
+    const startDateParsed = startOfDay(new Date(customStart + 'T00:00:00'));
+    const endDateParsed = endOfDay(new Date(customEnd + 'T00:00:00'));
+    if (startDateParsed > endDateParsed) {
+      alert(t('dashboard.period.invalidRange'));
       return;
     }
-    
-    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(
+      (endDateParsed.getTime() - startDateParsed.getTime()) / (1000 * 60 * 60 * 24)
+    );
     if (diffDays > 365) {
-      alert(t('common.periodFilter.max365Days'));
+      alert(t('dashboard.period.maxRange'));
       return;
     }
-    
-    if (diffDays < 1) {
-      alert(t('common.periodFilter.min1Day'));
+    if (endDateParsed > endOfDay(new Date())) {
+      alert(t('dashboard.period.noFuture'));
       return;
     }
-    
-    if (endDate > new Date()) {
-      alert(t('common.periodFilter.endNotFuture'));
-      return;
-    }
-    
     onChange({
       type: 'custom',
-      custom: {
-        startDate,
-        endDate
-      }
+      custom: { startDate: startDateParsed, endDate: endDateParsed },
     });
-    setShowCustomPicker(false);
+    setOpen(false);
   };
 
-  const handleCustomCancel = () => {
-    setShowCustomPicker(false);
-    setCustomStart('');
-    setCustomEnd('');
-  };
-
-  const getPeriodLabel = () => {
-    if (value.type === 'preset') {
-      return t(PERIOD_KEYS[value.preset]);
-    } else {
-      const start = value.custom.startDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
-      const end = value.custom.endDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
-      return `${start} - ${end}`;
-    }
-  };
-
-  // Converter para formato YYYY-MM-DD para input date
-  const formatDateForInput = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
-  const presets: Array<{ value: PeriodPreset; labelKey: string }> = [
-    { value: '30m', labelKey: PERIOD_KEYS['30m'] },
-    { value: '1h', labelKey: PERIOD_KEYS['1h'] },
-    { value: '12h', labelKey: PERIOD_KEYS['12h'] },
-    { value: '1d', labelKey: PERIOD_KEYS['1d'] },
-    { value: '7d', labelKey: PERIOD_KEYS['7d'] },
-    { value: '30d', labelKey: PERIOD_KEYS['30d'] },
-  ];
+  const maxDate = formatDateISO(new Date());
 
   return (
-    <div className={cn('relative', className)} ref={dropdownRef}>
-      {/* Dropdown Button */}
+    <div className={cn('relative w-full min-w-[280px] max-w-[340px]', className)} ref={ref}>
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        type="button"
+        onClick={() => setOpen(!open)}
         className={cn(
-          'flex min-w-[160px] items-center justify-between gap-2 rounded-xl px-4 py-2 border border-white/10 bg-white/[0.05] text-white/80 transition-all hover:border-pink-500/30 hover:text-white',
+          'w-full px-4 py-3 text-center text-sm font-medium text-white/90 transition-all hover:border-pink-500/30 hover:bg-white/[0.05]',
+          BUTTON_SURFACE,
           buttonClassName
         )}
       >
-        <span className="text-sm font-medium">{getPeriodLabel()}</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+        <span className="block whitespace-nowrap">{rangeLabel}</span>
       </button>
 
-      {/* Dropdown Menu */}
-      {showDropdown && (
-        <div className="absolute top-full right-0 mt-2 z-[9999] glass-panel rounded-xl p-2 border border-white/20 bg-black/98 backdrop-blur-xl shadow-xl min-w-[180px]">
-          <div className="space-y-1">
-            {presets.map((preset) => (
+      {open && (
+        <div className={cn('absolute right-0 top-full z-[9999] mt-2 w-full p-4', POPOVER_SURFACE)}>
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">{t('dashboard.period.title')}</span>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-white/50 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {QUICK_RANGES.map((q) => (
               <button
-                key={preset.value}
-                onClick={() => handlePresetSelect(preset.value)}
-                className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all text-left ${
-                  value.type === 'preset' && value.preset === preset.value
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                    : 'text-white/70 hover:text-white hover:bg-white/15'
-                }`}
+                key={q.days}
+                type="button"
+                onClick={() => applyQuickRange(q.days)}
+                className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white/80 hover:border-pink-500/40 hover:text-white"
               >
-                {t(preset.labelKey)}
+                {t(q.labelKey)}
               </button>
             ))}
-            <div className="h-px bg-white/10 my-2" />
-            <button
-              onClick={() => {
-                setShowCustomPicker(true);
-                setShowDropdown(false);
-              }}
-              className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all text-left flex items-center gap-2 ${
-                value.type === 'custom'
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                  : 'text-white/70 hover:text-white hover:bg-white/15'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              {value.type === 'custom' ? getPeriodLabel() : t('common.periodFilter.custom')}
-            </button>
           </div>
-        </div>
-      )}
 
-      {/* Custom Period Picker */}
-      {showCustomPicker && (
-        <div className="absolute top-full right-0 mt-2 z-[9999] glass-panel rounded-xl p-4 border border-white/20 bg-black/98 backdrop-blur-xl shadow-xl min-w-[320px]">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">{t('common.periodFilter.customPeriodTitle')}</h3>
-            <button
-              onClick={handleCustomCancel}
-              className="text-white/60 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-white/60 mb-1">{t('common.periodFilter.from')}</label>
+              <label className="mb-1 block text-xs text-white/50">{t('dashboard.period.from')}</label>
               <input
                 type="date"
-                value={customStart || (value.type === 'custom' ? formatDateForInput(value.custom.startDate) : '')}
+                value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                max={formatDateForInput(new Date())}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+                max={maxDate}
+                className="input-date-dark w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-pink-500/50 focus:outline-none"
               />
             </div>
-            
             <div>
-              <label className="block text-sm text-white/60 mb-1">{t('common.periodFilter.to')}</label>
+              <label className="mb-1 block text-xs text-white/50">{t('dashboard.period.to')}</label>
               <input
                 type="date"
-                value={customEnd || (value.type === 'custom' ? formatDateForInput(value.custom.endDate) : '')}
+                value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                max={formatDateForInput(new Date())}
+                max={maxDate}
                 min={customStart || undefined}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+                className="input-date-dark w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-pink-500/50 focus:outline-none"
               />
             </div>
-            
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleCustomApply}
-                className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white font-medium hover:shadow-lg transition-all"
-              >
-                {t('common.periodFilter.apply')}
-              </button>
-              <button
-                onClick={handleCustomCancel}
-                className="px-4 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white/60 hover:text-white transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={applyCustom}
+              className="w-full rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 py-2 text-sm font-medium text-white hover:shadow-lg"
+            >
+              {t('dashboard.period.apply')}
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 }
-

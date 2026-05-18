@@ -61,6 +61,9 @@ import {
   TwilioWhatsAppProfileResponse,
 } from "@/services/integrationService";
 import EvolutionAPIConfig from "@/components/EvolutionAPIConfig";
+import ChannelsConnectionsSection from "@/components/channels/ChannelsConnectionsSection";
+import { useConnections } from "@/hooks/useConnections";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChannelConfig {
   id: string;
@@ -186,11 +189,8 @@ export default function ChannelsPage() {
   const { currentCompany } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
-
-  const activeChannels = useMemo(
-    () => channels.filter((channel) => channel.status === "connected").length,
-    []
-  );
+  const connectionsHook = useConnections();
+  const { activeCount, loading: connectionsLoading } = connectionsHook;
 
   // Ouvir mensagens do popup quando callback é bem-sucedido
   useEffect(() => {
@@ -695,37 +695,30 @@ export default function ChannelsPage() {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                  Omnichannel
+                  {t("channels.omnichannel")}
                 </p>
                 <h1 className="text-3xl font-semibold text-white sm:text-4xl">
-                  {t("channels.title")}
+                  {t("channels.connections.pageTitle")}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-gray-400">
-                  {t("channels.subtitle")}
+                  {t("channels.connections.pageSubtitle")}
                 </p>
               </div>
 
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-gray-300">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-gray-500">
-                    {t("channels.activeChannels")}
-                  </p>
-                  <p className="text-2xl font-semibold text-white">
-                    {activeChannels}
-                  </p>
-                </div>
-                <div className="h-10 w-px bg-white/10" />
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  <span className="text-xs text-emerald-200">
-                    SLA 99.5% / 30 dias
-                  </span>
-                </div>
+              <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-gray-300">
+                <p className="text-xs uppercase tracking-[0.25em] text-gray-500">
+                  {t("channels.activeChannels")}
+                </p>
+                <p className="text-2xl font-semibold text-white tabular-nums">
+                  {connectionsLoading ? "—" : activeCount}
+                </p>
               </div>
             </div>
           </header>
 
-          <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <ChannelsConnectionsSection connectionsHook={connectionsHook} />
+
+          <section className="hidden grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
             {channels.map((channel) => (
               <Card
                 key={channel.id}
@@ -1475,201 +1468,6 @@ export default function ChannelsPage() {
             ))}
           </section>
 
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="glass-card rounded-3xl border border-white/10 bg-white/[0.04] px-7 py-6">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Experiência Omnichannel
-                  </h3>
-                    <p className="text-sm text-gray-400">
-                    Regras de distribuição por contexto, horário e idioma. Tudo
-                    alimentado com dados do CRM e da Arisara.
-                    </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="border-blue-400/40 bg-blue-500/10 text-blue-200"
-                >
-                  {t('channels.betaRulesEngine')}
-                </Badge>
-              </div>
-
-              <Tabs defaultValue="routing" className="space-y-5">
-                <TabsList className="grid w-full grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-black/30 p-2 text-xs uppercase tracking-[0.2em]">
-                  <TabsTrigger value="routing">{t('channels.routing')}</TabsTrigger>
-                  <TabsTrigger value="fallback">{t('channels.fallback')}</TabsTrigger>
-                  <TabsTrigger value="proactivity">{t('channels.proactivity')}</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="routing" className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                        {t('channels.identity')}
-                      </p>
-                      <h4 className="mt-2 text-sm font-semibold text-white">
-                        {t('channels.contextByConfidence')}
-                      </h4>
-                      <p className="mt-2 text-xs text-gray-400">
-                        {t('channels.routingConfidenceDesc')}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                        {t('channels.languages')}
-                      </p>
-                      <h4 className="mt-2 text-sm font-semibold text-white">
-                        {t('channels.redistributionByLanguage')}
-                      </h4>
-                      <p className="mt-2 text-xs text-gray-400">
-                        {t('channels.redistributionByLanguageDesc')}
-                      </p>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="fallback" className="space-y-4">
-                  <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-5">
-                    <div className="flex items-center justify-between text-sm text-gray-300">
-                      <span>{t('channels.autoFallbackLabel')}</span>
-                      <ArisaraSwitch
-                        checked={autoFallback}
-                        onCheckedChange={setAutoFallback}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      {t('channels.autoFallbackDesc')}
-                    </p>
-                    <div className="grid gap-3 md:grid-cols-2 text-xs text-gray-400">
-                      <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                        <span className="text-[11px] uppercase tracking-[0.2em] text-gray-500">
-                          {t('channels.activeCriteria')}
-                        </span>
-                        <ul className="mt-2 flex list-disc flex-col gap-1 pl-4">
-                          <li>Score de empatia &lt; 40</li>
-                          <li>Usuário VIP / Executivo</li>
-                          <li>Transação crítica (pagamentos)</li>
-                        </ul>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                        <span className="text-[11px] uppercase tracking-[0.2em] text-gray-500">
-                          {t('channels.whenDisabled')}
-                        </span>
-                        <p className="mt-2">
-                          {t('channels.whenDisabledDesc')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="proactivity" className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/35 px-5 py-4">
-                      <h4 className="text-sm font-semibold text-white">
-                        {t('channels.smartCampaigns')}
-                      </h4>
-                      <p className="mt-2 text-xs text-gray-400">
-                        {t('channels.smartCampaignsDesc')}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/35 px-5 py-4">
-                      <h4 className="text-sm font-semibold text-white">
-                        {t('channels.dynamicLocation')}
-                      </h4>
-                      <p className="mt-2 text-xs text-gray-400">
-                        {t('channels.dynamicLocationDesc')}
-                      </p>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            <div className="glass-card flex flex-col gap-5 rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-semibold text-white">
-                    {t('channels.regionsAndTimes')}
-                  </h3>
-                  <p className="text-xs text-gray-400">
-                    {t('channels.regionsAndTimesDesc')}
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="border-white/15 bg-white/5 text-[11px] text-gray-300"
-                >
-                  {t('channels.beta')}
-                </Badge>
-              </div>
-
-              <ToggleGroup
-                type="single"
-                value={selectedRegion}
-                onValueChange={(value) => value && setSelectedRegion(value)}
-                className="grid grid-cols-3 gap-2"
-              >
-                {regionPresets.map((region) => (
-                  <ToggleGroupItem
-                    key={region.id}
-                    value={region.id}
-                    className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-xs font-medium text-white data-[state=on]:border-[#EC4899]/60 data-[state=on]:bg-[#EC4899]/20"
-                  >
-                    <span>{t(`channels.regions.${region.id}`)}</span>
-                    <span className="text-[10px] text-gray-400">
-                      {region.countries} {t('channels.markets')}
-                    </span>
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-
-              <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                  {t('channels.scaleByLocation')}
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-[#EC4899]" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {t('channels.globalMap')}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {t('channels.allocationDesc')}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-3 text-xs text-gray-400">
-                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                    <span className="flex items-center gap-2">
-                      <Laptop className="h-3.5 w-3.5 text-emerald-400" />
-                      {t('channels.slaDigital')}
-                    </span>
-                    <span>{t('channels.avgResponseTime')}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                    <span>{t('channels.bilingualTeam')}</span>
-                    <span className="text-emerald-200">{t('channels.available')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 text-xs text-gray-400">
-                <span>Notas internas</span>
-                <Input
-                  placeholder="Ex.: Integrar Salesforce Service Cloud até 15/12"
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-[#EC4899]/60 focus:outline-none"
-                />
-                <Button
-                  variant="outline"
-                  className="self-end rounded-2xl border-white/20 bg-black/40 text-xs text-gray-200"
-                >
-                  Salvar nota
-                </Button>
-              </div>
-            </div>
-          </section>
         </div>
 
         {/* Modal de Configuração de Perfil WhatsApp Business */}

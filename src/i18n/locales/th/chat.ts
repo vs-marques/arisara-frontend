@@ -35,6 +35,8 @@ export default {
   youExpert: 'คุณ (ผู้เชี่ยวชาญ)',
   expert: 'ผู้เชี่ยวชาญ',
   imageAlt: 'รูปภาพ',
+  imageExpand: 'ขยายรูปภาพ',
+  imageOpenNewTab: 'เปิดในแท็บใหม่',
   voicePlay: 'เล่นเสียง',
   voiceTranscribe: 'ถอดความ',
   voiceTranscribing: 'กำลังถอดความ...',

@@ -36,6 +36,8 @@ export default {
   youExpert: 'Você (Especialista)',
   expert: 'Especialista',
   imageAlt: 'Imagem',
+  imageExpand: 'Ampliar imagem',
+  imageOpenNewTab: 'Abrir em nova aba',
   voicePlay: 'Reproduzir áudio',
   voiceTranscribe: 'Transcrever',
   voiceTranscribing: 'Transcrevendo...',

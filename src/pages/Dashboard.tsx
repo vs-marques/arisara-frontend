@@ -7,16 +7,29 @@ import StatCard from '../components/StatCard';
 import SettingsModal from '../components/SettingsModal';
 import FeedbackModal from '../components/FeedbackModal';
 import PeriodFilter from '../components/PeriodFilter';
-import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import ConversationsHourlyHeatmap, {
+  type HourlyHeatmapData,
+} from '../components/ConversationsHourlyHeatmap';
+import {
+  API_ENDPOINTS,
+  getAuthHeaders,
+  resolveWorkspaceIdForApi,
+  resolveCompanyIdForApi,
+} from '../config/api';
 import { Star, Building2, MessageSquare, Users, TrendingUp, Zap, Sparkles, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { usePeriod } from '../contexts/PeriodContext';
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { period, setPeriod, getDays, getHours, getStartDate, getEndDate } = usePeriod();
+  const { currentWorkspace } = useWorkspace();
+  const { period, setPeriod, getDays, getHours, getStartDate, getEndDate, getPeriodQueryParams } =
+    usePeriod();
+  const [hourlyHeatmap, setHourlyHeatmap] = useState<HourlyHeatmapData | null>(null);
+  const [loadingHourlyHeatmap, setLoadingHourlyHeatmap] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const detailsButtonRef = useRef<HTMLButtonElement>(null);
@@ -98,23 +111,23 @@ export default function Dashboard() {
   // Buscar dados de maturidade e estatísticas do dashboard
   useEffect(() => {
     const fetchDashboardData = async () => {
+      setLoadingHourlyHeatmap(true);
       try {
-        // Buscar dados do usuário via /auth/me
         const headers = getAuthHeaders();
         const meRes = await fetch(API_ENDPOINTS.auth.me, { headers });
-        
-        if (!meRes.ok) return;
-        
-        const userData = await meRes.json();
-        const companyId = userData.company_id;
-        
-        if (!companyId) return;
 
-        const days = getDays();
-        
-        // 1. Buscar estatísticas do dashboard
-        const statsUrl = API_ENDPOINTS.dashboard.stats(companyId, days);
-        console.debug("dashboard.stats_request", { companyId, days });
+        if (!meRes.ok) return;
+
+        const userData = await meRes.json();
+        const workspaceIdForStats = resolveWorkspaceIdForApi(currentWorkspace, userData);
+        const companyIdForMaturity = resolveCompanyIdForApi(currentWorkspace, userData);
+
+        if (!workspaceIdForStats) return;
+
+        const periodParams = getPeriodQueryParams();
+
+        const statsUrl = API_ENDPOINTS.dashboard.stats(workspaceIdForStats, periodParams);
+        console.debug("dashboard.stats_request", { workspaceIdForStats, companyIdForMaturity, ...periodParams });
         
         const statsRes = await fetch(statsUrl, { headers });
 
@@ -165,9 +178,20 @@ export default function Dashboard() {
           console.error("dashboard.stats_error", { status: statsRes.status, statusText: statsRes.statusText, detail: errorText?.slice(0, 200) });
         }
 
-        // 2. Buscar heatmap de maturidade
+        const heatmapUrl = API_ENDPOINTS.dashboard.hourlyHeatmap(
+          workspaceIdForStats,
+          periodParams
+        );
+        const hourlyRes = await fetch(heatmapUrl, { headers });
+        if (hourlyRes.ok) {
+          setHourlyHeatmap(await hourlyRes.json());
+        } else {
+          setHourlyHeatmap(null);
+        }
+
+        if (companyIdForMaturity) {
         const maturityRes = await fetch(
-          API_ENDPOINTS.aiMaturity.heatmap(companyId, days),
+          API_ENDPOINTS.aiMaturity.heatmap(companyIdForMaturity, periodParams.days),
           { headers }
         );
 
@@ -185,19 +209,22 @@ export default function Dashboard() {
             precision: dimensionsMap['Precisão']?.score || 0,
             confidence: dimensionsMap['Confiança']?.score || 0,
             adaptation: dimensionsMap['Adaptação']?.score || 0,
-            weeklyGrowth: 0 // Calcular depois quando houver dados
+            weeklyGrowth: 0
           });
+        }
         }
         } catch (err) {
         console.error("dashboard.fetch_error", { error: err instanceof Error ? err.message : String(err) });
-        // Mantém valores padrão (0)
+        setHourlyHeatmap(null);
+      } finally {
+        setLoadingHourlyHeatmap(false);
       }
     };
 
-    if (user?.company_id) {
+    if (user) {
       fetchDashboardData();
     }
-  }, [user, period, getDays]);
+  }, [user, currentWorkspace?.id, period, getPeriodQueryParams]);
 
   const username = useMemo(() => user?.username ?? 'Admin', [user]);
   const userEmail = useMemo(() => user?.email ?? '', [user]);
@@ -222,7 +249,13 @@ export default function Dashboard() {
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-3">
               {/* Período Global */}
-              <PeriodFilter value={period} onChange={setPeriod} className="self-start lg:self-center" />
+              <PeriodFilter
+                value={period}
+                onChange={setPeriod}
+                startDate={getStartDate()}
+                endDate={getEndDate()}
+                className="w-full max-w-[340px] self-stretch sm:self-start lg:self-center"
+              />
               
               <div className="flex items-center gap-3 self-start lg:self-center">
                 <div className="text-right">
@@ -382,6 +415,8 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+
+          <ConversationsHourlyHeatmap data={hourlyHeatmap} loading={loadingHourlyHeatmap} />
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-6 shadow-[0_24px_60px_-55px_rgba(0,0,0,0.5)]">
             <div className="mb-6 flex items-center justify-between">

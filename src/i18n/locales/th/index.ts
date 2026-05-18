@@ -19,6 +19,7 @@ import saturnoLive from './saturno-live';
 import saturnoMeetThanks from './saturno-meet-thanks';
 import leads from './leads';
 import workspaces from './workspaces';
+import properties from './properties';
 
 export default {
   settings,
@@ -44,4 +45,5 @@ export default {
     ...saturnoMeetThanks,
   },
   leads,
+  properties,
 };

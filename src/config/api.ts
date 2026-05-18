@@ -7,6 +7,25 @@
 // Prioriza VITE_API_URL, depois VITE_BACKEND_URL, depois localhost
 export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
 
+export type PeriodApiParams = {
+  start_date?: string;
+  end_date?: string;
+  days?: number;
+};
+
+export function buildPeriodQuery(params?: PeriodApiParams): string {
+  if (!params) return '';
+  const qs = new URLSearchParams();
+  if (params.start_date && params.end_date) {
+    qs.set('start_date', params.start_date);
+    qs.set('end_date', params.end_date);
+  } else if (params.days != null) {
+    qs.set('days', String(params.days));
+  }
+  const q = qs.toString();
+  return q ? `?${q}` : '';
+}
+
 // Endpoints
 export const API_ENDPOINTS = {
   // Auth
@@ -153,8 +172,10 @@ export const API_ENDPOINTS = {
   
   // Dashboard
   dashboard: {
-    stats: (companyId: string, days?: number) => 
-      `${API_BASE_URL}/dashboard/stats/${companyId}${days ? `?days=${days}` : ''}`,
+    stats: (companyId: string, params?: PeriodApiParams) =>
+      `${API_BASE_URL}/dashboard/stats/${companyId}${buildPeriodQuery(params)}`,
+    hourlyHeatmap: (companyId: string, params?: PeriodApiParams) =>
+      `${API_BASE_URL}/dashboard/conversations/hourly-heatmap/${companyId}${buildPeriodQuery(params)}`,
   },
   
   // AI Config

@@ -35,6 +35,8 @@ export default {
   youExpert: 'You (Expert)',
   expert: 'Expert',
   imageAlt: 'Image',
+  imageExpand: 'Expand image',
+  imageOpenNewTab: 'Open in new tab',
   voicePlay: 'Play audio',
   voiceTranscribe: 'Transcribe',
   voiceTranscribing: 'Transcribing...',

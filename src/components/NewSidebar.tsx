@@ -25,6 +25,7 @@ import {
   PanelLeftClose,
   UserCircle,
   CalendarDays,
+  Building2,
 } from 'lucide-react';
 
 import { planet } from '@lucide/lab';
@@ -58,6 +59,7 @@ const NAVIGATION_TREE_RAW: NavGroupRaw[] = [
     titleKey: 'modules',
     items: [
       { id: 'documents', labelKey: 'documents', href: '/documents', icon: FileText },
+      { id: 'properties', labelKey: 'properties', href: '/properties', icon: Building2 },
       { id: 'ai-config', labelKey: 'aiConfig', href: '/ai/prompt', icon: Bot },
       { id: 'channels', labelKey: 'channels', href: '/channels', icon: Share2 },
       { id: 'discovery', labelKey: 'discovery', href: '/discovery', icon: Compass },

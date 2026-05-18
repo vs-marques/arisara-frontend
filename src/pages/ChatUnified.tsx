@@ -48,6 +48,7 @@ import {
 } from "../components/ui/dialog";
 import NewConversationModal from "../components/NewConversationModal";
 import ImportContactsModal from "../components/ImportContactsModal";
+import ChatMessageImage from "../components/ChatMessageImage";
 
 // Interfaces
 interface Message {
@@ -108,6 +109,56 @@ function extractImageUrls(text: string): string[] {
 interface ContentSegment {
   type: "text" | "image";
   content: string;
+}
+
+type StructuredChatItem = {
+  text?: string;
+  media?: {
+    type?: string;
+    url?: string;
+    base64?: string;
+    caption?: string;
+  };
+};
+
+function structuredItemToMessage(
+  item: StructuredChatItem,
+  index: number
+): Message | null {
+  if (item.text?.trim()) {
+    return {
+      id: `msg-${Date.now()}-${index}`,
+      role: "assistant",
+      content: item.text.trim(),
+      timestamp: new Date(),
+    };
+  }
+  if (item.media) {
+    const caption = (item.media.caption || "").trim();
+    const imageUrl = item.media.base64
+      ? `data:image/jpeg;base64,${item.media.base64}`
+      : item.media.url?.trim();
+    if (!caption && !imageUrl) return null;
+    return {
+      id: `msg-${Date.now()}-${index}`,
+      role: "assistant",
+      content: caption,
+      images: imageUrl ? [imageUrl] : undefined,
+      timestamp: new Date(),
+    };
+  }
+  return null;
+}
+
+async function handleMessagesArray(
+  messages: StructuredChatItem[],
+  addMessage: (msg: Message) => void
+) {
+  for (let i = 0; i < messages.length; i++) {
+    const mapped = structuredItemToMessage(messages[i], i);
+    if (!mapped) continue;
+    addMessage(mapped);
+  }
 }
 
 function parseMessageContent(
@@ -1177,21 +1228,41 @@ export default function ChatUnified() {
         setSelectedSession(data.session_id);
       }
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.response,
-        images: data.images || undefined, // ✅ Incluir imagens se houver
-        timestamp: new Date(),
-        metadata: {
-          chunks_used: data.context?.chunks_used,
-          latency_ms: data.metadata?.latency_ms,
-          confidence: data.metadata?.confidence,
-          session_id: data.session_id,
-          session_status: data.session_status,
-        },
+      const responseMeta = {
+        chunks_used: data.context?.chunks_used,
+        latency_ms: data.metadata?.latency_ms,
+        confidence: data.metadata?.confidence,
+        session_id: data.session_id,
+        session_status: data.session_status,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+        setLoading(false);
+        await handleMessagesArray(data.messages, (msg) =>
+          setMessages((prev) => [...prev, { ...msg, metadata: responseMeta }])
+        );
+      } else {
+        const firstStructured = data.messages?.[0] as StructuredChatItem | undefined;
+        const fromMedia = firstStructured
+          ? structuredItemToMessage(firstStructured, 0)
+          : null;
+        const replyText =
+          fromMedia?.content ||
+          data.response?.trim() ||
+          data.message?.trim() ||
+          firstStructured?.text?.trim() ||
+          "Não consegui processar sua mensagem.";
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: replyText,
+            images: fromMedia?.images || data.images || undefined,
+            timestamp: new Date(),
+            metadata: responseMeta,
+          },
+        ]);
+      }
 
       // Recarregar sessões após enviar mensagem (sem loading, já há feedback visual)
       await fetchSessions(false);
@@ -1272,19 +1343,33 @@ export default function ChatUnified() {
             : m
         )
       );
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.response,
-          images: data.images,
-          timestamp: new Date(),
-          metadata: {
-            session_id: data.session_id,
-            session_status: data.session_status,
+      const voiceMeta = {
+        session_id: data.session_id,
+        session_status: data.session_status,
+      };
+      if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+        await handleMessagesArray(data.messages, (msg) =>
+          setMessages((prev) => [...prev, { ...msg, metadata: voiceMeta }])
+        );
+      } else {
+        const firstStructured = data.messages?.[0] as StructuredChatItem | undefined;
+        const fromMedia = firstStructured
+          ? structuredItemToMessage(firstStructured, 0)
+          : null;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              fromMedia?.content ||
+              data.response?.trim() ||
+              "Não consegui processar sua mensagem.",
+            images: fromMedia?.images || data.images,
+            timestamp: new Date(),
+            metadata: voiceMeta,
           },
-        },
-      ]);
+        ]);
+      }
       await fetchSessions(false);
     } catch (err: any) {
       setMessages((prev) =>
@@ -1841,19 +1926,11 @@ export default function ChatUnified() {
                       (segment, segIdx) => {
                         if (segment.type === "image") {
                           return (
-                            <div
+                            <ChatMessageImage
                               key={segIdx}
-                              className="rounded-lg overflow-hidden border border-white/10 my-2"
-                            >
-                              <img
-                                src={segment.content}
-                                alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
-                                className="w-full h-auto max-h-96 object-contain"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            </div>
+                              src={segment.content}
+                              alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
+                            />
                           );
                         }
                         return (
@@ -1995,19 +2072,11 @@ export default function ChatUnified() {
                       (segment, segIdx) => {
                         if (segment.type === "image") {
                           return (
-                            <div
+                            <ChatMessageImage
                               key={segIdx}
-                              className="rounded-lg overflow-hidden border border-white/10 my-2"
-                            >
-                              <img
-                                src={segment.content}
-                                alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
-                                className="w-full h-auto max-h-96 object-contain"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            </div>
+                              src={segment.content}
+                              alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
+                            />
                           );
                         }
                         return (
@@ -2754,19 +2823,11 @@ export default function ChatUnified() {
                           (segment, segIdx) => {
                             if (segment.type === "image") {
                               return (
-                                <div
+                                <ChatMessageImage
                                   key={segIdx}
-                                  className="rounded-lg overflow-hidden border border-white/10 my-2"
-                                >
-                                  <img
-                                    src={segment.content}
-                                    alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
-                                    className="w-full h-auto max-h-96 object-contain"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = "none";
-                                    }}
-                                  />
-                                </div>
+                                  src={segment.content}
+                                  alt={`${t("chat.imageAlt")} ${segIdx + 1}`}
+                                />
                               );
                             }
                             return (

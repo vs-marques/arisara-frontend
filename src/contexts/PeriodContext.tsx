@@ -1,5 +1,19 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { PeriodType, PeriodPreset } from '../components/PeriodFilter';
+import {
+  formatDateISO,
+  getStartDateFromPeriod,
+  getEndDateFromPeriod,
+  getDaysFromPeriod,
+  getHoursFromPeriod,
+  lastNDaysRange,
+} from '../lib/periodUtils';
+
+export interface PeriodQueryParams {
+  start_date: string;
+  end_date: string;
+  days: number;
+}
 
 interface PeriodContextType {
   period: PeriodType;
@@ -8,69 +22,49 @@ interface PeriodContextType {
   getHours: () => number;
   getStartDate: () => Date;
   getEndDate: () => Date;
+  getPeriodQueryParams: () => PeriodQueryParams;
 }
 
 const PeriodContext = createContext<PeriodContextType | undefined>(undefined);
 
+function defaultPeriod(): PeriodType {
+  const { startDate, endDate } = lastNDaysRange(7);
+  return { type: 'custom', custom: { startDate, endDate } };
+}
+
 export function PeriodProvider({ children }: { children: ReactNode }) {
-  const [period, setPeriod] = useState<PeriodType>({ type: 'preset', preset: '30d' });
+  const [period, setPeriod] = useState<PeriodType>(defaultPeriod);
 
-  const getHours = (): number => {
-    if (period.type === 'preset') {
-      const hoursMap: Record<PeriodPreset, number> = {
-        '30m': 0.5,
-        '1h': 1,
-        '12h': 12,
-        '1d': 24,
-        '7d': 168,
-        '30d': 720
-      };
-      return hoursMap[period.preset];
-    } else {
-      const diffTime = period.custom.endDate.getTime() - period.custom.startDate.getTime();
-      return diffTime / (1000 * 60 * 60);
-    }
-  };
+  const getHours = useCallback((): number => getHoursFromPeriod(period), [period]);
 
-  const getDays = (): number => {
-    if (period.type === 'preset') {
-      const daysMap: Record<PeriodPreset, number> = {
-        '30m': 1, // Mínimo de 1 dia para queries SQL
-        '1h': 1,
-        '12h': 1,
-        '1d': 1,
-        '7d': 7,
-        '30d': 30
-      };
-      return daysMap[period.preset];
-    } else {
-      const diffTime = period.custom.endDate.getTime() - period.custom.startDate.getTime();
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-  };
+  const getDays = useCallback((): number => getDaysFromPeriod(period), [period]);
 
-  const getStartDate = (): Date => {
-    if (period.type === 'preset') {
-      const endDate = new Date();
-      const startDate = new Date();
-      const hours = getHours();
-      startDate.setTime(endDate.getTime() - hours * 60 * 60 * 1000);
-      return startDate;
-    } else {
-      return period.custom.startDate;
-    }
-  };
+  const getStartDate = useCallback((): Date => getStartDateFromPeriod(period), [period]);
 
-  const getEndDate = (): Date => {
-    if (period.type === 'preset') {
-      return new Date();
-    } else {
-      return period.custom.endDate;
-    }
-  };
+  const getEndDate = useCallback((): Date => getEndDateFromPeriod(period), [period]);
+
+  const getPeriodQueryParams = useCallback((): PeriodQueryParams => {
+    const start = getStartDateFromPeriod(period);
+    const end = getEndDateFromPeriod(period);
+    return {
+      start_date: formatDateISO(start),
+      end_date: formatDateISO(end),
+      days: getDaysFromPeriod(period),
+    };
+  }, [period]);
 
   return (
-    <PeriodContext.Provider value={{ period, setPeriod, getDays, getHours, getStartDate, getEndDate }}>
+    <PeriodContext.Provider
+      value={{
+        period,
+        setPeriod,
+        getDays,
+        getHours,
+        getStartDate,
+        getEndDate,
+        getPeriodQueryParams,
+      }}
+    >
       {children}
     </PeriodContext.Provider>
   );
@@ -84,3 +78,4 @@ export function usePeriod() {
   return context;
 }
 
+export type { PeriodPreset };

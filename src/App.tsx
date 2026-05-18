@@ -30,6 +30,9 @@ import ChatUnified from './pages/ChatUnified';
 import Channels from './pages/Channels';
 import Discovery from './pages/Discovery';
 import WabaCallback from './pages/WabaCallback';
+import PropertiesHub from './pages/PropertiesHub';
+import PropertyDetail from './pages/PropertyDetail';
+import PropertiesSearch from './pages/PropertiesSearch';
 
 function App() {
   return (
@@ -53,6 +56,9 @@ function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/documents/upload" element={<Documents />} />
+          <Route path="/properties/search" element={<PropertiesSearch />} />
+          <Route path="/properties/:listingId" element={<PropertyDetail />} />
+          <Route path="/properties" element={<PropertiesHub />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route

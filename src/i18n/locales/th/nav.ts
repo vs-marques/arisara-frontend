@@ -9,6 +9,7 @@ export default {
   leads: 'ลูกค้า',
   agenda: 'วาระงาน',
   documents: 'เอกสาร',
+  properties: 'อสังหาริมทรัพย์',
   aiConfig: 'การตั้งค่า AI',
   channels: 'ช่องทาง',
   discovery: 'ดิสคัฟเวอรี',
